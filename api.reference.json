@@ -1,0 +1,393 @@
+{
+  "info": {
+    "name": "Orion Backend — v1 API",
+    "_postman_id": "6f3f6c86-3f0a-4a3c-9f2f-9f9da5c3a001",
+    "description": "Postman collection for Orion backend. Import into Postman. Set variables baseUrl and token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Base",
+      "item": [
+        {
+          "name": "GET /",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/",
+            "header": []
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": "{{baseUrl}}/" },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"name\": \"Orion Backend\",\n  \"version\": \"0.1.0\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "header": []
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{ \"status\": \"ok\" }"
+            }
+          ]
+        },
+        {
+          "name": "GET /api-docs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api-docs",
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth & Profile (/api/v1/me)",
+      "item": [
+        {
+          "name": "GET /api/v1/me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - UserProfile",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": \"c0f1e3f0-7f1a-4d61-8a0b-2f9cbd8c3c1a\",\n  \"email\": \"admin@example.com\",\n  \"displayName\": \"Admin User\",\n  \"role\": \"ADMIN\",\n  \"firstLoginAt\": \"2025-08-29T12:20:00.000Z\",\n  \"lastLoginAt\": \"2025-08-29T12:45:00.000Z\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "code": 401,
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Missing or invalid token\",\n    \"details\": {},\n    \"correlationId\": \"<uuid>\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/v1/me",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Yash Shrivastava\"\n}"
+            },
+            "description": "Body: { displayName?: string|null } (max 100 chars)"
+          },
+          "response": [
+            {
+              "name": "200 OK - Updated UserProfile",
+              "code": 200,
+              "body": "{\n  \"id\": \"c0f1e3f0-7f1a-4d61-8a0b-2f9cbd8c3c1a\",\n  \"email\": \"admin@example.com\",\n  \"displayName\": \"Yash Shrivastava\",\n  \"role\": \"ADMIN\",\n  \"firstLoginAt\": \"2025-08-29T12:20:00.000Z\",\n  \"lastLoginAt\": \"2025-08-29T12:50:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"Invalid body\",\n    \"details\": [\n      { \"message\": \"\\\"displayName\\\" length must be less than or equal to 100 characters long\" }\n    ],\n    \"correlationId\": \"<uuid>\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "People",
+      "item": [
+        {
+          "name": "GET /api/v1/people (search)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people?status={{status}}&q={{q}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "people"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "description": "Optional. One of SUSPECT|LEAD|CANDIDATE_FREE|CANDIDATE_PAID|ALUMNI|DEFERRED|DISCONTINUED"
+                },
+                {
+                  "key": "q",
+                  "value": "{{q}}",
+                  "description": "Optional ILIKE filter on email/phone/linkedinUrl"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - Person[]",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": \"6f9b50d3-9a08-4a3f-b7d0-1d7a58b1f001\",\n    \"firstName\": \"Avi\",\n    \"lastName\": \"Singh\",\n    \"email\": \"avi@example.com\",\n    \"phone\": \"+91-9999999999\",\n    \"linkedinUrl\": \"https://linkedin.com/in/avi\",\n    \"source\": \"seed\",\n    \"status\": \"SUSPECT\",\n    \"createdAt\": \"2025-08-29T12:00:00.000Z\",\n    \"updatedAt\": \"2025-08-29T12:00:00.000Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/people (create SUSPECT)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/people",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Avi\",\n  \"lastName\": \"Singh\",\n  \"email\": \"avi@example.com\",\n  \"phone\": \"+91-9999999999\",\n  \"linkedinUrl\": \"https://linkedin.com/in/avi\",\n  \"source\": \"seed\"\n}"
+            },
+            "description": "All fields optional; status defaults to SUSPECT"
+          },
+          "response": [
+            {
+              "name": "201 Created - Person",
+              "code": 201,
+              "body": "{\n  \"id\": \"6f9b50d3-9a08-4a3f-b7d0-1d7a58b1f001\",\n  \"firstName\": \"Avi\",\n  \"lastName\": \"Singh\",\n  \"email\": \"avi@example.com\",\n  \"phone\": \"+91-9999999999\",\n  \"linkedinUrl\": \"https://linkedin.com/in/avi\",\n  \"source\": \"seed\",\n  \"status\": \"SUSPECT\",\n  \"createdAt\": \"2025-08-29T12:00:00.000Z\",\n  \"updatedAt\": \"2025-08-29T12:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/people/:id (detail)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/people/:id",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - Person",
+              "code": 200,
+              "body": "{\n  \"id\": \"6f9b50d3-9a08-4a3f-b7d0-1d7a58b1f001\",\n  \"firstName\": \"Avi\",\n  \"lastName\": \"Singh\",\n  \"email\": \"avi@example.com\",\n  \"phone\": \"+91-9999999999\",\n  \"linkedinUrl\": \"https://linkedin.com/in/avi\",\n  \"source\": \"seed\",\n  \"status\": \"LEAD\",\n  \"transitions\": [\n    { \"toStatus\": \"LEAD\", \"reason\": \"Booked counseling\", \"createdAt\": \"2025-08-29T12:30:00.000Z\" }\n  ],\n  \"createdAt\": \"2025-08-29T12:00:00.000Z\",\n  \"updatedAt\": \"2025-08-29T12:30:00.000Z\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "code": 404,
+              "body": "{ \"error\": { \"code\": \"NOT_FOUND\", \"message\": \"Person not found\" } }"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/people/:id/transition",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/people/:id/transition",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toStatus\": \"LEAD\",\n  \"reason\": \"Booked counseling\"\n}"
+            },
+            "description": "Allowed transitions now: SUSPECT→LEAD, LEAD→CANDIDATE_FREE"
+          },
+          "response": [
+            {
+              "name": "201 Created - Person (updated)",
+              "code": 201,
+              "body": "{\n  \"id\": \"6f9b50d3-9a08-4a3f-b7d0-1d7a58b1f001\",\n  \"status\": \"LEAD\",\n  \"updatedAt\": \"2025-08-29T12:30:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "code": 400,
+              "body": "{ \"error\": { \"code\": \"BAD_REQUEST\", \"message\": \"Invalid body or transition\" } }"
+            },
+            {
+              "name": "409 Conflict (Invalid transition)",
+              "code": 409,
+              "body": "{ \"error\": { \"code\": \"CONFLICT\", \"message\": \"Invalid transition\" } }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roster",
+      "item": [
+        {
+          "name": "GET /api/v1/roster (JSON)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/roster",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - Person[] (CANDIDATE_FREE)",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": \"7b3f...\",\n    \"email\": \"candidate@example.com\",\n    \"status\": \"CANDIDATE_FREE\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/roster (CSV)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/roster",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              { "key": "Accept", "value": "text/csv" }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - CSV",
+              "code": 200,
+              "body": "id,email,status\\n7b3f...,candidate@example.com,CANDIDATE_FREE\\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "GET /api/v1/settings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/settings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK - Settings",
+              "code": 200,
+              "body": "{\n  \"meetingLink\": \"https://cal.example.com/orion\",\n  \"sources\": [\"seed\", \"referral\"]\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/v1/settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/settings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meetingLink\": \"https://cal.example.com/orion\",\n  \"sources\": [\"seed\", \"referral\", \"campaign-x\"]\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Updated Settings",
+              "code": 200,
+              "body": "{\n  \"meetingLink\": \"https://cal.example.com/orion\",\n  \"sources\": [\"seed\", \"referral\", \"campaign-x\"]\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "code": 400,
+              "body": "{ \"error\": { \"code\": \"BAD_REQUEST\", \"message\": \"Invalid body\" } }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST /api/v1/webhooks/cal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/webhooks/cal",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_123\",\n  \"payload\": { \"foo\": \"bar\" }\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - { ok: true }",
+              "code": 200,
+              "body": "{ \"ok\": true }"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

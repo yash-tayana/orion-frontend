@@ -1,0 +1,262 @@
+---
+alwaysApply: true
+---
+## Frontend Architecture (Next.js + TypeScript)
+
+A reusable architecture and coding standards guide for building robust Next.js (App Router) applications in TypeScript.
+
+### Goals
+
+- **Server-first** by default (Server Components, streaming, caching), with Client Components only when needed.
+- **Predictable structure** across features and UI layers, with typed API access and env validation.
+- **Operational quality**: accessibility, performance, security headers/CSP, observability, tests, CI.
+
+---
+
+## Project Structure
+
+Recommended root layout (App Router):
+
+```
+src/
+  app/
+    (marketing)/                 # optional route groups
+    layout.tsx                   # root layout
+    page.tsx                     # home
+    error.tsx                    # root error boundary (server)
+    loading.tsx                  # root fallback
+    api/                         # route handlers (if needed)
+    dashboard/
+      layout.tsx
+      page.tsx
+      error.tsx
+      loading.tsx
+  components/
+    ui/                          # design system primitives (buttons, inputs)
+    common/                      # reusable composites (tables, modals)
+  features/
+    <feature-name>/
+      components/
+      hooks/
+      api/                       # client fetchers or server actions
+      types/
+      utils/
+  hooks/
+  lib/                           # shared libs: fetch client, auth, analytics, i18n
+  styles/
+    globals.css
+    tailwind.css                 # if Tailwind used
+  assets/ or public/             # images, icons
+  config/                        # zod-based env validation, feature flags
+  test/                          # unit/integration tests
+```
+
+Key principles:
+- Co-locate code by feature under `src/features/<feature>`.
+- Keep `src/components/ui` framework-agnostic, small, accessible, and documented.
+- Favor **Server Components**; mark Client Components with `'use client'` and only when interactivity/state is required.
+
+---
+
+## TypeScript & Paths
+
+- Enable strict mode (`strict: true`), `noUncheckedIndexedAccess`, `noImplicitOverride`.
+- Use `baseUrl: src` and path aliases for features, e.g.:
+  - `@/app/*`, `@/components/*`, `@/features/*`, `@/lib/*`, `@/hooks/*`, `@/config/*`
+- Enforce explicit return types for exported functions and React components.
+
+---
+
+## Data Fetching, Caching, and State
+
+Server Components (preferred):
+- Use `fetch` in Server Components to leverage Next.js Request Memoization and caching.
+- Choose a caching strategy per request:
+  - Static (default) with revalidation: `{ next: { revalidate: 60 } }`
+  - Dynamic: `{ cache: 'no-store' }`
+  - Tag-based: `revalidateTag('tag')` and `fetch(..., { next: { tags: ['tag'] } })`
+
+Client Components:
+- For client-side state and async, use **TanStack Query** with `@tanstack/react-query`.
+- Hydrate server-fetched data where possible to avoid duplicate requests.
+- Avoid global state unless necessary; if needed, use **Zustand** for small local stores or **Redux Toolkit** for complex flows.
+
+Server Actions and Route Handlers:
+- Prefer Server Actions for mutations originating from UI forms.
+- For HTTP endpoints inside Next.js, use App Router Route Handlers in `app/api/*` with proper caching headers.
+
+---
+
+## API Layer (Typed Fetch)
+
+Create a thin fetch wrapper in `src/lib/http.ts`:
+- Base URL from env; JSON handling; timeouts; auth cookie forwarding when on server.
+- Throw typed errors with shape `{ status, code, message, details? }`.
+- Consider generating a typed client from OpenAPI (e.g., `openapi-typescript` + custom fetch) to sync with backend.
+
+Recommendations:
+- On the server: prefer direct DB/service access if co-located monorepo; otherwise use fetch with internal network URL.
+- On the client: always call via your wrapper; do not expose secrets (no server envs).
+
+---
+
+## Environment Management
+
+- Use `.env.local` for local dev; `.env.production` or platform variables for prod.
+- Validate env with Zod at runtime in `src/config/env.ts`:
+  - Server-only: `process.env.*` (never exposed to client)
+  - Public: prefix with `NEXT_PUBLIC_`
+- Example groups:
+  - `NEXT_PUBLIC_APP_BASE_URL`, `NEXT_PUBLIC_ANALYTICS_KEY`
+  - `API_BASE_URL`, `AUTH_SECRET`, `CSP_REPORT_URI`
+
+Never import server envs in Client Components. Use `server-only` when appropriate.
+
+---
+
+## Styling & Design System
+
+- Default: **Tailwind CSS** + **Radix UI** primitives + **class-variance-authority (CVA)** for variants.
+- Alternative: CSS Modules for isolated styles; keep global CSS minimal.
+- Maintain tokens (spacing, colors, typography) and light/dark themes via CSS variables.
+- Follow accessible patterns: focus states, color contrast, ARIA attributes.
+
+Component conventions:
+- UI primitives in `src/components/ui` (stateless, accessible, tested).
+- Feature composites in `src/features/<feature>/components`.
+- No ad-hoc inline styles for reusable components; prefer utility classes and variants.
+
+---
+
+## Routing, Layouts, and UX States
+
+- App Router segments with nested `layout.tsx`.
+- Use `loading.tsx` and `error.tsx` per route segment.
+- Progressive enhancement: stream server-rendered content, suspense boundaries.
+- Use `not-found.tsx` and `generateStaticParams` for dynamic static routes when applicable.
+
+---
+
+## Authentication & Session
+
+- Prefer **NextAuth.js** (Auth.js) with cookie-based sessions.
+- Store tokens in HttpOnly cookies; never in `localStorage`.
+- Server-side helpers read session in Server Components/Route Handlers.
+- Protect routes using middleware or route segment-level checks.
+
+---
+
+## Accessibility & Internationalization
+
+- ESLint `jsx-a11y` rules enabled (see Linting section).
+- Keyboard navigability, focus management, semantic HTML, and form labeling by default.
+- i18n: use **next-intl** or **next-i18next**; keep translations under `src/messages/<locale>.json` and load in layouts.
+
+---
+
+## Security
+
+- Set strict security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options) via `middleware.ts` or `next.config.js`.
+- Sanitize any HTML with a trusted sanitizer before `dangerouslySetInnerHTML`.
+- Avoid third-party inline scripts; prefer `next/script` with `strategy` and `nonce` or `hash`.
+- Use `next-safe-action` or similar patterns for server actions if handling sensitive input.
+
+---
+
+## Observability
+
+- Integrate Sentry (client + server) or alternative. Capture route transitions, API errors, and performance metrics.
+- Correlate with backend by propagating `x-request-id` from responses to client logs (if provided by backend) and include it in error reports.
+
+---
+
+## Testing Strategy
+
+- Unit/Integration: **Jest** + **React Testing Library** + **@testing-library/jest-dom**.
+- E2E: **Playwright** (or Cypress).
+- Snapshots only for stable UI; prefer assertions by role/text.
+- CI: run `lint`, `typecheck`, `test`, and `build`.
+
+Suggested scripts:
+```
+dev: next dev
+build: next build
+start: next start -p $PORT
+lint: next lint
+typecheck: tsc --noEmit
+test: jest
+e2e: playwright test
+```
+
+---
+
+## Linting & Formatting
+
+ESLint (with Next.js config):
+- Extend `next/core-web-vitals`, `plugin:@typescript-eslint/recommended`, `plugin:jsx-a11y/recommended`, `plugin:import/recommended`, `plugin:import/typescript`, and `prettier`.
+- Rules:
+  - Explicit function return types on exported functions/components
+  - No implicit `any`
+  - Enforce import order and no default exports for React components (optional)
+  - `jsx-a11y` warnings/errors for accessibility
+  - Filenames: kebab-case for files, PascalCase for components
+
+Prettier:
+- Keep consistent with backend: `printWidth: 120`, `singleQuote: true`, `semi: true`, `trailingComma: 'all'` (or `es5`).
+
+Husky + lint-staged:
+- Pre-commit: `eslint --fix` + `prettier --write` on staged files
+- Pre-push: `typecheck` + `test`
+
+---
+
+## Performance Standards
+
+- Use **Server Components** and avoid unnecessary Client Components.
+- Images via `next/image`; fonts via `next/font`.
+- Split code with `dynamic(() => import(...), { ssr: false })` for heavy client-only widgets.
+- Memoize expensive components and list virtualization where needed.
+- Prefer streaming and partial hydration; leverage route segment revalidation.
+
+---
+
+## Build, Deploy, and Runtime
+
+- `next.config.js` minimal by default; enable `images.domains`, `experimental: { staleTimes, optimizePackageImports }` as needed.
+- Vercel/Node: inject env vars per environment; do not commit `.env`.
+- Use platform logs and error tracking; include commit SHA in build (e.g., via `NEXT_PUBLIC_COMMIT_SHA`).
+
+---
+
+## Feature Blueprint (Template)
+
+Example `src/features/payments/`:
+```
+payments/
+  components/
+    PaymentForm.tsx              # 'use client' only if needed
+    PaymentList.tsx              # server component if possible
+  hooks/
+    useCreatePayment.ts          # react-query mutation
+    usePayments.ts               # react-query query
+  api/
+    getPayments.ts               # typed fetch wrapper
+    createPayment.ts
+  types/
+    index.ts                     # DTOs and API types
+  utils/
+    formatters.ts
+  tests/
+    PaymentForm.spec.tsx
+```
+
+---
+
+## How to Reuse
+
+- Copy this structure and standards into new Next.js repos.
+- Keep UI primitives simple and accessible; encapsulate complex logic in features.
+- Validate envs, enforce linting/formatting, and set up CI to block regressions.
+- Treat this document as the canonical guide to review and onboard.
+
+
