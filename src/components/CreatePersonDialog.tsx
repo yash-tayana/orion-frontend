@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { usePeople } from "@/api/hooks/usePeople";
+import { useSettings } from "@/api/hooks/useSettings";
 
 interface CreatePersonDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export default function CreatePersonDialog({
 }: CreatePersonDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
   const { create } = usePeople({});
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -39,9 +41,12 @@ export default function CreatePersonDialog({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Get dynamic sources from settings
+  const availableSources = settings.data?.sources || [];
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstName?.trim()) {
       newErrors.firstName = "First name is required";
     }
@@ -53,10 +58,16 @@ export default function CreatePersonDialog({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ""))) {
+    if (
+      formData.phone &&
+      !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ""))
+    ) {
       newErrors.phone = "Invalid phone number";
     }
-    if (formData.linkedinUrl && !formData.linkedinUrl.includes("linkedin.com")) {
+    if (
+      formData.linkedinUrl &&
+      !formData.linkedinUrl.includes("linkedin.com")
+    ) {
       newErrors.linkedinUrl = "Invalid LinkedIn URL";
     }
 
@@ -72,7 +83,8 @@ export default function CreatePersonDialog({
       enqueueSnackbar("Person created successfully", { variant: "success" });
       handleClose();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create person";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create person";
       enqueueSnackbar(errorMessage, {
         variant: "error",
       });
@@ -93,9 +105,9 @@ export default function CreatePersonDialog({
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -124,7 +136,7 @@ export default function CreatePersonDialog({
               required
             />
           </Box>
-          
+
           <TextField
             label="Email"
             type="email"
@@ -135,7 +147,7 @@ export default function CreatePersonDialog({
             fullWidth
             required
           />
-          
+
           <TextField
             label="Phone"
             value={formData.phone}
@@ -145,7 +157,7 @@ export default function CreatePersonDialog({
             fullWidth
             placeholder="+1-555-555-5555"
           />
-          
+
           <TextField
             label="LinkedIn URL"
             value={formData.linkedinUrl}
@@ -155,7 +167,7 @@ export default function CreatePersonDialog({
             fullWidth
             placeholder="https://linkedin.com/in/username"
           />
-          
+
           <FormControl fullWidth>
             <InputLabel>Source</InputLabel>
             <Select
@@ -164,6 +176,13 @@ export default function CreatePersonDialog({
               label="Source"
             >
               <MenuItem value="">Select source</MenuItem>
+              {/* Custom sources from settings (at the top) */}
+              {availableSources.map((source) => (
+                <MenuItem key={source} value={source}>
+                  {source.charAt(0).toUpperCase() + source.slice(1)}
+                </MenuItem>
+              ))}
+              {/* Default sources (always available) */}
               <MenuItem value="seed">Seed</MenuItem>
               <MenuItem value="referral">Referral</MenuItem>
               <MenuItem value="website">Website</MenuItem>

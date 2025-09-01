@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { usePeople } from "@/api/hooks/usePeople";
+import { useSettings } from "@/api/hooks/useSettings";
 import type { Person } from "@/api/hooks/usePeople";
 
 interface EditPersonDialogProps {
@@ -32,6 +33,7 @@ export default function EditPersonDialog({
 }: EditPersonDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
   const { update } = usePeople({});
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -41,6 +43,9 @@ export default function EditPersonDialog({
     source: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Get dynamic sources from settings
+  const availableSources = settings.data?.sources || [];
 
   // Initialize form data when person changes
   useEffect(() => {
@@ -58,7 +63,7 @@ export default function EditPersonDialog({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstName?.trim()) {
       newErrors.firstName = "First name is required";
     }
@@ -70,10 +75,16 @@ export default function EditPersonDialog({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ""))) {
+    if (
+      formData.phone &&
+      !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ""))
+    ) {
       newErrors.phone = "Invalid phone number";
     }
-    if (formData.linkedinUrl && !formData.linkedinUrl.includes("linkedin.com")) {
+    if (
+      formData.linkedinUrl &&
+      !formData.linkedinUrl.includes("linkedin.com")
+    ) {
       newErrors.linkedinUrl = "Invalid LinkedIn URL";
     }
 
@@ -92,7 +103,8 @@ export default function EditPersonDialog({
       enqueueSnackbar("Person updated successfully", { variant: "success" });
       handleClose();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update person";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update person";
       enqueueSnackbar(errorMessage, {
         variant: "error",
       });
@@ -105,9 +117,9 @@ export default function EditPersonDialog({
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -136,7 +148,7 @@ export default function EditPersonDialog({
               required
             />
           </Box>
-          
+
           <TextField
             label="Email"
             type="email"
@@ -147,7 +159,7 @@ export default function EditPersonDialog({
             fullWidth
             required
           />
-          
+
           <TextField
             label="Phone"
             value={formData.phone}
@@ -157,7 +169,7 @@ export default function EditPersonDialog({
             fullWidth
             placeholder="+1-555-555-5555"
           />
-          
+
           <TextField
             label="LinkedIn URL"
             value={formData.linkedinUrl}
@@ -167,7 +179,7 @@ export default function EditPersonDialog({
             fullWidth
             placeholder="https://linkedin.com/in/username"
           />
-          
+
           <FormControl fullWidth>
             <InputLabel>Source</InputLabel>
             <Select
@@ -176,6 +188,13 @@ export default function EditPersonDialog({
               label="Source"
             >
               <MenuItem value="">Select source</MenuItem>
+              {/* Custom sources from settings (at the top) */}
+              {availableSources.map((source) => (
+                <MenuItem key={source} value={source}>
+                  {source.charAt(0).toUpperCase() + source.slice(1)}
+                </MenuItem>
+              ))}
+              {/* Default sources (always available) */}
               <MenuItem value="seed">Seed</MenuItem>
               <MenuItem value="referral">Referral</MenuItem>
               <MenuItem value="website">Website</MenuItem>

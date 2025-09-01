@@ -16,6 +16,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { useSnackbar } from "notistack";
 import { useRoster } from "@/api/hooks/useRoster";
+import { useSettings } from "@/api/hooks/useSettings";
 import { downloadBlobCsv } from "@/utils/csv";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PageHeader from "@/components/PageHeader";
@@ -23,6 +24,7 @@ import EmptyState from "@/components/EmptyState";
 
 export default function RosterPage(): ReactElement {
   const { list, downloadCsv } = useRoster();
+  const { settings } = useSettings();
   const { enqueueSnackbar } = useSnackbar();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -52,10 +54,14 @@ export default function RosterPage(): ReactElement {
               startIcon={<ContentCopyIcon />}
               onClick={async () => {
                 try {
-                  const link =
-                    (window as { __DEFAULT_MEETING_LINK__?: string })
-                      .__DEFAULT_MEETING_LINK__ || "";
-                  await navigator.clipboard.writeText(link);
+                  const meetingLink = settings.data?.meetingLink || "";
+                  if (!meetingLink) {
+                    enqueueSnackbar("No meeting link configured in settings", {
+                      variant: "error",
+                    });
+                    return;
+                  }
+                  await navigator.clipboard.writeText(meetingLink);
                   enqueueSnackbar("Meeting link copied", {
                     variant: "success",
                   });

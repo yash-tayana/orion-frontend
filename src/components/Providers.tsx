@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, type ReactElement } from "react";
+import { ReactNode, type ReactElement, useState, useEffect } from "react";
 import {
   ThemeProvider,
   CssBaseline,
@@ -13,6 +13,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import MsalProviderWrapper from "@/auth/MsalProviderWrapper";
 import { SnackbarProvider } from "notistack";
+import MsalRedirectHandler from "./MsalRedirectHandler";
 
 export default function Providers({
   children,
@@ -20,6 +21,12 @@ export default function Providers({
   children: ReactNode;
 }): ReactElement {
   const cache = createCache({ key: "mui", prepend: true });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <MsalProviderWrapper>
       <QueryClientProvider client={queryClient}>
@@ -27,7 +34,11 @@ export default function Providers({
           <StyledEngineProvider injectFirst>
             <ThemeProvider theme={muiTheme}>
               <CssBaseline />
-              <SnackbarProvider maxSnack={3} autoHideDuration={4000}>
+              <SnackbarProvider
+                maxSnack={3}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                {isClient && <MsalRedirectHandler />}
                 {children}
               </SnackbarProvider>
             </ThemeProvider>

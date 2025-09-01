@@ -7,6 +7,7 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useMemo, useState } from "react";
 import usePerson from "@/api/hooks/usePerson";
+import { useTransitions } from "@/api/hooks/useTransitions";
 import StatusChip from "@/components/StatusChip";
 import Button from "@mui/material/Button";
 import { useMe } from "@/api/hooks/useMe";
@@ -22,6 +23,7 @@ export default function PersonPanel(): ReactElement {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { data } = usePerson(params.id);
+  const { transitions } = useTransitions(params.id || "");
   const { settings } = useSettings();
   const counselingUrl = settings.data?.counselingEmbedUrl || "";
   const { data: me } = useMe();
@@ -184,7 +186,9 @@ export default function PersonPanel(): ReactElement {
               {counselingUrl ? (
                 <iframe
                   title="Counseling"
-                  src={counselingUrl}
+                  src={`${counselingUrl}?name=${encodeURIComponent(
+                    `${data.firstName || ""} ${data.lastName || ""}`.trim()
+                  )}&email=${encodeURIComponent(data.email || "")}`}
                   style={{ border: 0, width: "100%", height: "100%" }}
                 />
               ) : (
@@ -196,7 +200,7 @@ export default function PersonPanel(): ReactElement {
           )}
           {tab === 2 && (
             <Box display="flex" flexDirection="column" gap={1}>
-              {(data.transitions || []).map((t, i) => (
+              {(transitions.data || []).map((t, i) => (
                 <Box
                   key={i}
                   fontSize={14}
@@ -208,33 +212,48 @@ export default function PersonPanel(): ReactElement {
                     border: "1px solid rgba(99,102,241,0.1)",
                   }}
                 >
-                  {formatDistanceToNow(new Date(t.createdAt), {
-                    addSuffix: true,
-                  })}
-                  {" · "}
                   <Box component="span" color="text.primary" fontWeight={600}>
                     {t.toStatus.replace("_", " ")}
                   </Box>
+                  {" · "}
+                  {formatDistanceToNow(new Date(t.createdAt), {
+                    addSuffix: true,
+                  })}
                   {t.reason && (
                     <>
-                      {" · "}
-                      <Box component="span" color="text.secondary">
-                        {t.reason}
+                      <br />
+                      <Box
+                        component="span"
+                        color="text.secondary"
+                        fontSize={12}
+                      >
+                        Reason: {t.reason}
                       </Box>
                     </>
                   )}
                 </Box>
               ))}
-              {(!data.transitions || data.transitions.length === 0) && (
+              {transitions.isLoading && (
                 <Box
                   textAlign="center"
                   py={4}
                   color="text.secondary"
                   fontSize="0.875rem"
                 >
-                  No status transitions yet
+                  Loading transitions...
                 </Box>
               )}
+              {!transitions.isLoading &&
+                (!transitions.data || transitions.data.length === 0) && (
+                  <Box
+                    textAlign="center"
+                    py={4}
+                    color="text.secondary"
+                    fontSize="0.875rem"
+                  >
+                    No status transitions yet
+                  </Box>
+                )}
             </Box>
           )}
         </Box>
@@ -243,6 +262,10 @@ export default function PersonPanel(): ReactElement {
       <PersonTransitionDialog
         open={promoteOpen}
         onClose={() => setPromoteOpen(false)}
+        onSuccess={() => {
+          // Close the drawer and redirect to people list after successful promotion
+          router.push("/admin/people");
+        }}
         person={data}
       />
 

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
-import { loginRequest, tokenRequest } from "./msalConfig";
+import { loginRequest, tokenRequest, logoutRequest } from "./msalConfig";
 import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
 
 export type DecodedToken = {
   roles?: string[];
@@ -18,35 +19,44 @@ export function useAuth() {
   const isAuthenticated = useIsAuthenticated();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const router = useRouter();
 
-  const acquireToken = useCallback(async (): Promise<string> => {
+  const acquireToken = useCallback(async (): Promise<string | null> => {
     const activeAccount = account || accounts[0] || null;
     if (!activeAccount) {
-      const loginRes = await instance.loginPopup(loginRequest);
+      // If no account, return null instead of redirecting
+      return null;
+    }
+    try {
       const token = (
         await instance.acquireTokenSilent({
           ...tokenRequest,
-          account: loginRes.account,
+          account: activeAccount,
         })
       ).accessToken;
       return token;
+    } catch {
+      return null;
     }
-    const token = (
-      await instance.acquireTokenSilent({
-        ...tokenRequest,
-        account: activeAccount,
-      })
-    ).accessToken;
-    return token;
   }, [account, accounts, instance]);
 
   const signIn = useCallback(async () => {
-    await instance.loginPopup(loginRequest);
+    await instance.loginRedirect(loginRequest);
   }, [instance]);
 
   const signOut = useCallback(async () => {
-    await instance.logoutPopup();
-  }, [instance]);
+    const activeAccount = account || accounts[0] || null;
+    if (activeAccount) {
+      // Clear all cache and redirect to logout
+      await instance.logoutRedirect({
+        ...logoutRequest,
+        account: activeAccount,
+      });
+    } else {
+      // If no account, just redirect to login page
+      router.push("/login");
+    }
+  }, [instance, account, accounts, router]);
 
   useEffect(() => {
     let mounted = true;
@@ -55,24 +65,41 @@ export function useAuth() {
         const token = await acquireToken();
         if (!mounted) return;
         setAccessToken(token);
-        try {
-          const decoded = jwtDecode<DecodedToken>(token);
-          setRoles(Array.isArray(decoded.roles) ? decoded.roles : []);
-          if (process.env.NODE_ENV !== "production") {
-            // Debug: verify v2 issuer and audience
-            console.log("MSAL access token iss/aud:", decoded.iss, decoded.aud);
+        if (token) {
+          try {
+            const decoded = jwtDecode<DecodedToken>(token);
+            setRoles(Array.isArray(decoded.roles) ? decoded.roles : []);
+            // Token decoded successfully
+          } catch {
+            setRoles([]);
           }
-        } catch {
+        } else {
           setRoles([]);
         }
       } catch {
-        // ignore, will login on guard
+        // For errors, clear state
+        if (mounted) {
+          setAccessToken(null);
+          setRoles([]);
+        }
       }
     })();
     return () => {
       mounted = false;
     };
   }, [acquireToken]);
+
+  // Additional effect to handle account changes
+  useEffect(() => {
+    if (account && !accessToken) {
+      // If we have an account but no token, try to acquire one
+      acquireToken().then((token) => {
+        if (token) {
+          setAccessToken(token);
+        }
+      });
+    }
+  }, [account, accessToken, acquireToken]);
 
   const role = useMemo(
     () => (roles.includes("ADMIN") ? "ADMIN" : "USER"),

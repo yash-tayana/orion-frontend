@@ -8,6 +8,10 @@ export const msalConfig: Configuration = {
     clientId: env.NEXT_PUBLIC_AZURE_CLIENT_ID,
     authority,
     knownAuthorities: [authority],
+    redirectUri:
+      typeof window !== "undefined" ? window.location.origin : undefined,
+    postLogoutRedirectUri:
+      typeof window !== "undefined" ? window.location.origin : undefined,
   },
   cache: {
     cacheLocation: "sessionStorage",
@@ -35,4 +39,9 @@ export const loginRequest = {
 // Silent token acquisition scopes: use .default for the API audience
 export const tokenRequest = {
   scopes: [`${env.NEXT_PUBLIC_AZURE_API_AUDIENCE}/.default`],
+};
+
+// Logout request configuration
+export const logoutRequest = {
+  account: undefined, // Will be set dynamically
 };

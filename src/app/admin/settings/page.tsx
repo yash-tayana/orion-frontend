@@ -61,12 +61,6 @@ export default function SettingsPage(): ReactElement {
         payload.sources = cleanSources;
       }
 
-      console.log("Final payload:", payload);
-
-      console.log("Current sources state:", sources);
-      console.log("Clean sources:", cleanSources);
-      console.log("Sending settings payload:", payload);
-
       await update.mutateAsync(payload);
       enqueueSnackbar("Settings saved", { variant: "success" });
     } catch (e: unknown) {

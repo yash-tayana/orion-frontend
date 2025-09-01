@@ -22,6 +22,7 @@ import type { Person } from "@/api/hooks/usePeople";
 interface PersonTransitionDialogProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void; // New callback for successful transitions
   person: Person;
 }
 
@@ -48,6 +49,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function PersonTransitionDialog({
   open,
   onClose,
+  onSuccess,
   person,
 }: PersonTransitionDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
@@ -62,7 +64,7 @@ export default function PersonTransitionDialog({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.toStatus) {
       newErrors.toStatus = "Please select a new status";
     }
@@ -81,8 +83,13 @@ export default function PersonTransitionDialog({
       await transition.mutateAsync(formData);
       enqueueSnackbar("Status updated successfully", { variant: "success" });
       handleClose();
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update status";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update status";
       enqueueSnackbar(errorMessage, {
         variant: "error",
       });
@@ -99,9 +106,9 @@ export default function PersonTransitionDialog({
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -111,7 +118,10 @@ export default function PersonTransitionDialog({
         <DialogTitle>No Transitions Available</DialogTitle>
         <DialogContent>
           <Box py={2}>
-            <p>No status transitions are available from the current status: <strong>{STATUS_LABELS[person.status]}</strong></p>
+            <p>
+              No status transitions are available from the current status:{" "}
+              <strong>{STATUS_LABELS[person.status]}</strong>
+            </p>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -127,10 +137,14 @@ export default function PersonTransitionDialog({
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={3} pt={1}>
           <Box>
-            <p><strong>Current Status:</strong> {STATUS_LABELS[person.status]}</p>
-            <p><strong>Person:</strong> {person.firstName} {person.lastName}</p>
+            <p>
+              <strong>Current Status:</strong> {STATUS_LABELS[person.status]}
+            </p>
+            <p>
+              <strong>Person:</strong> {person.firstName} {person.lastName}
+            </p>
           </Box>
-          
+
           <FormControl fullWidth>
             <InputLabel>New Status</InputLabel>
             <Select
@@ -149,13 +163,15 @@ export default function PersonTransitionDialog({
               <FormHelperText error>{errors.toStatus}</FormHelperText>
             )}
           </FormControl>
-          
+
           <TextField
             label="Reason for Change"
             value={formData.reason}
             onChange={(e) => handleChange("reason", e.target.value)}
             error={!!errors.reason}
-            helperText={errors.reason || "Explain why this status change is happening"}
+            helperText={
+              errors.reason || "Explain why this status change is happening"
+            }
             fullWidth
             multiline
             rows={3}

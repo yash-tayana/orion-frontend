@@ -13,16 +13,7 @@ export function MsalProviderWrapper({
   children: ReactNode;
 }): ReactElement {
   const pca = useMemo(() => {
-    const redirectUri =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-    return new PublicClientApplication({
-      ...msalConfig,
-      auth: {
-        ...msalConfig.auth,
-        redirectUri,
-        postLogoutRedirectUri: redirectUri,
-      },
-    });
+    return new PublicClientApplication(msalConfig);
   }, []);
   return <MsalProvider instance={pca}>{children}</MsalProvider>;
 }
