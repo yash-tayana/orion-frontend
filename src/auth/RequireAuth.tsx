@@ -5,11 +5,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import { useAuth } from "./useAuth";
 
+import type { ReactElement } from "react";
+
 export default function RequireAuth({
   children,
 }: {
   children: ReactNode;
-}): JSX.Element {
+}): ReactElement {
   const { isAuthenticated, accessToken, signIn, inProgress } = useAuth();
 
   useEffect(() => {

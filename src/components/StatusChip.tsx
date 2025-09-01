@@ -1,11 +1,21 @@
+import type { ReactElement } from "react";
 import Chip from "@mui/material/Chip";
+
+type ChipColor =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "error"
+  | "info"
+  | "success"
+  | "warning";
 
 export default function StatusChip({
   status,
 }: {
   status: string;
-}): JSX.Element {
-  const color =
+}): ReactElement {
+  const color: ChipColor =
     status === "SUSPECT"
       ? "default"
       : status === "LEAD"
@@ -16,12 +26,14 @@ export default function StatusChip({
       ? "primary"
       : status === "ALUMNI"
       ? "secondary"
+      : status === "DISCONTINUED"
+      ? "error"
       : "warning";
   return (
     <Chip
       size="small"
-      label={status.replace("_", " ")}
-      color={color as any}
+      label={status.replaceAll("_", " ")}
+      color={color}
       variant="outlined"
     />
   );

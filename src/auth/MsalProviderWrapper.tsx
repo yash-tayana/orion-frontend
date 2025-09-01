@@ -5,11 +5,13 @@ import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication } from "@azure/msal-browser";
 import { msalConfig } from "./msalConfig";
 
+import type { ReactElement } from "react";
+
 export function MsalProviderWrapper({
   children,
 }: {
   children: ReactNode;
-}): JSX.Element {
+}): ReactElement {
   const pca = useMemo(() => {
     const redirectUri =
       typeof window !== "undefined" ? window.location.origin : undefined;

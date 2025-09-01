@@ -53,7 +53,20 @@ export function usePeople(params: { status?: string; q?: string }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["people"] }),
   });
 
-  return { list, create } as const;
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Partial<Person> }) =>
+      fetchJson<Person>(`/api/v1/people/${id}`, {
+        method: "PATCH",
+        body,
+        token: accessToken || undefined,
+      }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["people"] });
+      queryClient.invalidateQueries({ queryKey: ["person", id] });
+    },
+  });
+
+  return { list, create, update } as const;
 }
 
 export default usePeople;

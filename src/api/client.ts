@@ -1,5 +1,5 @@
 import { env } from "@/config/env";
-import { ApiError } from "./errors";
+import { ApiError, toUserMessage } from "./errors";
 
 type JsonValue =
   | Record<string, unknown>
@@ -43,23 +43,34 @@ export async function fetchJson<T>(
     let correlationId: string | undefined;
 
     try {
-      const data = (await res.json()) as any;
-      if (data?.error) {
-        code = data.error.code;
-        message = data.error.message || message;
-        details = data.error.details;
-        correlationId = data.error.correlationId;
+      const data = (await res.json()) as unknown;
+      if (data && typeof data === "object" && "error" in data) {
+        const errorData = data as {
+          error: {
+            code?: string;
+            message?: string;
+            details?: unknown;
+            correlationId?: string;
+          };
+        };
+        code = errorData.error.code;
+        message = errorData.error.message || message;
+        details = errorData.error.details;
+        correlationId = errorData.error.correlationId;
       }
     } catch {
       // ignore parse errors
     }
-    throw new ApiError({
+    const err = new ApiError({
       status: res.status,
       code,
       message,
       details,
       correlationId,
     });
+    // Emit a centralized console hint for easier support troubleshooting
+    console.error("API error:", toUserMessage(err));
+    throw err;
   }
 
   const contentType = res.headers.get("content-type") || "";

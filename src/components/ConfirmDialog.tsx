@@ -6,7 +6,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactElement } from "react";
 
 export default function ConfirmDialog({
   open,
@@ -22,7 +22,7 @@ export default function ConfirmDialog({
   onClose: () => void;
   onConfirm: (reason?: string) => void;
   requireReason?: boolean;
-}): JSX.Element {
+}): ReactElement {
   const [reason, setReason] = useState("");
   useEffect(() => {
     if (!open) setReason("");

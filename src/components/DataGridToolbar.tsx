@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
@@ -19,7 +20,7 @@ export default function DataGridToolbar({
   onStatus: (v: string) => void;
   onCreate: () => void;
   disableCreate?: boolean;
-}): JSX.Element {
+}): ReactElement {
   return (
     <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
       <TextField

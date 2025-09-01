@@ -1,4 +1,4 @@
-import { Configuration, LogLevel } from "@azure/msal-browser";
+import { Configuration } from "@azure/msal-browser";
 import { env } from "@/config/env";
 
 const authority = `https://login.microsoftonline.com/${env.NEXT_PUBLIC_AZURE_TENANT_ID}`;
@@ -15,8 +15,8 @@ export const msalConfig: Configuration = {
   },
   system: {
     loggerOptions: {
-      loggerCallback: (_level, _message, _containsPii) => {},
-      logLevel: LogLevel.Error,
+      loggerCallback: () => {},
+      logLevel: 3, // Error level
       piiLoggingEnabled: false,
     },
   },

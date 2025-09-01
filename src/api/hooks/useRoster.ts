@@ -5,10 +5,20 @@ import { useAuth } from "@/auth/useAuth";
 export function useRoster() {
   const { accessToken } = useAuth();
 
-  const list = useQuery<any[]>({
+  type RosterPerson = {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
+
+  const list = useQuery<RosterPerson[]>({
     queryKey: ["roster"],
     queryFn: () =>
-      fetchJson<any[]>("/api/v1/roster", { token: accessToken || undefined }),
+      fetchJson<RosterPerson[]>("/api/v1/roster", {
+        token: accessToken || undefined,
+      }),
     enabled: Boolean(accessToken),
   });
 

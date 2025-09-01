@@ -7,6 +7,7 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_AZURE_API_AUDIENCE: z
     .string()
     .min(1, "Missing Azure API Audience (api://...)"),
+  NEXT_PUBLIC_AUTH_BYPASS: z.string().optional(),
 });
 
 export type PublicEnv = z.infer<typeof EnvSchema>;
@@ -19,7 +20,6 @@ export const env: PublicEnv = (() => {
     NEXT_PUBLIC_AZURE_API_AUDIENCE: process.env.NEXT_PUBLIC_AZURE_API_AUDIENCE,
   });
   if (!parsed.success) {
-    // eslint-disable-next-line no-console
     console.error(
       "Environment validation failed:",
       parsed.error.flatten().fieldErrors

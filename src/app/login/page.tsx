@@ -9,7 +9,9 @@ import Typography from "@mui/material/Typography";
 import { useAuth } from "@/auth/useAuth";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage(): JSX.Element {
+import type { ReactElement } from "react";
+
+export default function LoginPage(): ReactElement {
   const { isAuthenticated, signIn } = useAuth();
   const router = useRouter();
 

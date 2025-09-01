@@ -60,7 +60,6 @@ export function useAuth() {
           setRoles(Array.isArray(decoded.roles) ? decoded.roles : []);
           if (process.env.NODE_ENV !== "production") {
             // Debug: verify v2 issuer and audience
-            // eslint-disable-next-line no-console
             console.log("MSAL access token iss/aud:", decoded.iss, decoded.aud);
           }
         } catch {

@@ -1,7 +1,13 @@
 "use client";
 
-import { JSX, ReactNode } from "react";
-import { ThemeProvider, CssBaseline } from "@mui/material";
+import { ReactNode, type ReactElement } from "react";
+import {
+  ThemeProvider,
+  CssBaseline,
+  StyledEngineProvider,
+} from "@mui/material";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import { muiTheme } from "@/theme/muiTheme";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -12,16 +18,21 @@ export default function Providers({
   children,
 }: {
   children: ReactNode;
-}): JSX.Element {
+}): ReactElement {
+  const cache = createCache({ key: "mui", prepend: true });
   return (
     <MsalProviderWrapper>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={muiTheme}>
-          <CssBaseline />
-          <SnackbarProvider maxSnack={3} autoHideDuration={4000}>
-            {children}
-          </SnackbarProvider>
-        </ThemeProvider>
+        <CacheProvider value={cache}>
+          <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={muiTheme}>
+              <CssBaseline />
+              <SnackbarProvider maxSnack={3} autoHideDuration={4000}>
+                {children}
+              </SnackbarProvider>
+            </ThemeProvider>
+          </StyledEngineProvider>
+        </CacheProvider>
       </QueryClientProvider>
     </MsalProviderWrapper>
   );
