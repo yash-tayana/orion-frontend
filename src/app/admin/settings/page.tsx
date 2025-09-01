@@ -41,7 +41,33 @@ export default function SettingsPage(): ReactElement {
 
   const onSave = async () => {
     try {
-      await update.mutateAsync({ meetingLink, counselingEmbedUrl, sources });
+      // Filter out empty sources and trim whitespace
+      const cleanSources = sources
+        .filter((s) => s && typeof s === "string" && s.trim() !== "")
+        .map((s) => s.trim());
+
+      // Ensure all values are properly formatted
+      const payload: Record<string, unknown> = {};
+
+      if (meetingLink.trim()) {
+        payload.meetingLink = meetingLink.trim();
+      }
+
+      if (counselingEmbedUrl.trim()) {
+        payload.counselingEmbedUrl = counselingEmbedUrl.trim();
+      }
+
+      if (cleanSources.length > 0) {
+        payload.sources = cleanSources;
+      }
+
+      console.log("Final payload:", payload);
+
+      console.log("Current sources state:", sources);
+      console.log("Clean sources:", cleanSources);
+      console.log("Sending settings payload:", payload);
+
+      await update.mutateAsync(payload);
       enqueueSnackbar("Settings saved", { variant: "success" });
     } catch (e: unknown) {
       const message =
@@ -169,10 +195,12 @@ export default function SettingsPage(): ReactElement {
             />
             <Button
               onClick={() => {
-                if (!newSource) return;
-                setSources((s) => Array.from(new Set([...s, newSource])));
+                if (!newSource.trim()) return;
+                const trimmedSource = newSource.trim();
+                setSources((s) => Array.from(new Set([...s, trimmedSource])));
                 setNewSource("");
               }}
+              disabled={!newSource.trim()}
             >
               Add
             </Button>

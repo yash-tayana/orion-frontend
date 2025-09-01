@@ -16,14 +16,29 @@ export default function KebabMenu({
   const open = Boolean(anchorEl);
   return (
     <>
-      <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
+      <IconButton
+        size="small"
+        onClick={(e) => {
+          e.stopPropagation();
+          setAnchorEl(e.currentTarget);
+        }}
+        aria-label="More options"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
         <MoreVertIcon fontSize="small" />
       </IconButton>
-      <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        onClick={(e) => e.stopPropagation()}
+      >
         {items.map((it, i) => (
           <MenuItem
             key={i}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setAnchorEl(null);
               it.onClick();
             }}
