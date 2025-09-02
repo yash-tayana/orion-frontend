@@ -9,6 +9,14 @@ export type Transition = {
   createdAt: string;
 };
 
+export type TransitionPayload = {
+  toStatus: string;
+  reason: string;
+  deferredUntil?: string | null;
+  deferredReason?: string;
+  discontinueReason?: string;
+};
+
 export function useTransitions(personId: string) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
@@ -24,7 +32,7 @@ export function useTransitions(personId: string) {
   });
 
   const transition = useMutation({
-    mutationFn: (body: { toStatus: string; reason?: string }) =>
+    mutationFn: (body: TransitionPayload) =>
       fetchJson<Person>(`/api/v1/people/${personId}/transition`, {
         method: "POST",
         body,

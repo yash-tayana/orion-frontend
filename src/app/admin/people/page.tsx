@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Box, Button, Paper } from "@mui/material";
+import { Box, Button, Paper, Menu, MenuItem, Chip } from "@mui/material";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
 
-import { usePeople } from "@/api/hooks/usePeople";
+import { usePeople, type Person } from "@/api/hooks/usePeople";
 import { useMe } from "@/api/hooks/useMe";
 import { isAdmin } from "@/utils/rbac";
 import PageHeader from "@/components/PageHeader";
@@ -14,6 +14,8 @@ import SegmentedControl from "@/components/SegmentedControl";
 import KebabMenu from "@/components/KebabMenu";
 import EmptyState from "@/components/EmptyState";
 import CreatePersonDialog from "@/components/CreatePersonDialog";
+import EditPersonDialog from "@/components/EditPersonDialog";
+import StatusChip from "@/components/StatusChip";
 
 export default function PeoplePage(): React.ReactElement {
   const { data: me } = useMe();
@@ -22,6 +24,11 @@ export default function PeoplePage(): React.ReactElement {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
 
   const { list } = usePeople({
     status: status || undefined,
@@ -76,32 +83,7 @@ export default function PeoplePage(): React.ReactElement {
         field: "status",
         headerName: "Status",
         width: 140,
-        renderCell: (params) => (
-          <Box
-            sx={{
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              bgcolor:
-                params.row.status === "LEAD"
-                  ? "rgba(34,197,94,0.1)"
-                  : params.row.status === "CANDIDATE_FREE"
-                  ? "rgba(59,130,246,0.1)"
-                  : "rgba(156,163,175,0.1)",
-              color:
-                params.row.status === "LEAD"
-                  ? "success.main"
-                  : params.row.status === "CANDIDATE_FREE"
-                  ? "primary.main"
-                  : "text.secondary",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-            }}
-          >
-            {params.row.status.replace("_", " ")}
-          </Box>
-        ),
+        renderCell: (params) => <StatusChip status={params.row.status} />,
       },
       {
         field: "createdAt",
@@ -124,6 +106,13 @@ export default function PeoplePage(): React.ReactElement {
               },
               ...(isAdmin(me?.role)
                 ? [
+                    {
+                      label: "Edit",
+                      onClick: () => {
+                        setSelectedPerson(params.row);
+                        setOpenEdit(true);
+                      },
+                    },
                     {
                       label: "Promote",
                       onClick: () =>
@@ -164,6 +153,79 @@ export default function PeoplePage(): React.ReactElement {
             { label: "Candidate-Free", value: "CANDIDATE_FREE" },
           ]}
         />
+        <Button
+          variant="outlined"
+          onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
+          sx={{ minWidth: 80 }}
+        >
+          More
+        </Button>
+        <Menu
+          anchorEl={moreMenuAnchor}
+          open={Boolean(moreMenuAnchor)}
+          onClose={() => setMoreMenuAnchor(null)}
+        >
+          <MenuItem
+            onClick={() => {
+              setStatus("CANDIDATE_PAID");
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <Chip
+              size="small"
+              label="CANDIDATE_PAID"
+              color="primary"
+              variant="outlined"
+              sx={{ mr: 1 }}
+            />
+            Candidate Paid
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setStatus("ALUMNI");
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <Chip
+              size="small"
+              label="ALUMNI"
+              color="secondary"
+              variant="outlined"
+              sx={{ mr: 1 }}
+            />
+            Alumni
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setStatus("DEFERRED");
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <Chip
+              size="small"
+              label="DEFERRED"
+              color="warning"
+              variant="outlined"
+              sx={{ mr: 1 }}
+            />
+            Deferred
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setStatus("DISCONTINUED");
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <Chip
+              size="small"
+              label="DISCONTINUED"
+              color="error"
+              variant="outlined"
+              sx={{ mr: 1 }}
+            />
+            Discontinued
+          </MenuItem>
+        </Menu>
       </Box>
       <Paper sx={{ height: 620, width: "100%", overflow: "hidden" }}>
         <DataGrid
@@ -207,6 +269,17 @@ export default function PeoplePage(): React.ReactElement {
         open={openCreate}
         onClose={() => setOpenCreate(false)}
       />
+
+      {selectedPerson && (
+        <EditPersonDialog
+          open={openEdit}
+          onClose={() => {
+            setOpenEdit(false);
+            setSelectedPerson(null);
+          }}
+          person={selectedPerson}
+        />
+      )}
     </>
   );
 }

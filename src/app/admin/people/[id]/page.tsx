@@ -16,6 +16,7 @@ import { useSettings } from "@/api/hooks/useSettings";
 import { formatDistanceToNow } from "date-fns";
 import PersonTransitionDialog from "@/components/PersonTransitionDialog";
 import EditPersonDialog from "@/components/EditPersonDialog";
+import EmptyState from "@/components/EmptyState";
 
 import type { ReactElement } from "react";
 
@@ -186,15 +187,20 @@ export default function PersonPanel(): ReactElement {
               {counselingUrl ? (
                 <iframe
                   title="Counseling"
-                  src={`${counselingUrl}?name=${encodeURIComponent(
+                  src={`${counselingUrl}?personId=${
+                    data.id
+                  }&name=${encodeURIComponent(
                     `${data.firstName || ""} ${data.lastName || ""}`.trim()
                   )}&email=${encodeURIComponent(data.email || "")}`}
                   style={{ border: 0, width: "100%", height: "100%" }}
                 />
               ) : (
-                <Box color="text.secondary">
-                  No counseling embed configured.
-                </Box>
+                <EmptyState
+                  title="No Counseling Embed Configured"
+                  description="Add a counseling embed URL in Settings to enable this feature."
+                  actionLabel="Go to Settings"
+                  onAction={() => router.push("/admin/settings")}
+                />
               )}
             </Box>
           )}

@@ -14,7 +14,9 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  Stack,
 } from "@mui/material";
+
 import { useSnackbar } from "notistack";
 import { useTransitions } from "@/api/hooks/useTransitions";
 import type { Person } from "@/api/hooks/usePeople";
@@ -57,6 +59,9 @@ export default function PersonTransitionDialog({
   const [formData, setFormData] = useState({
     toStatus: "",
     reason: "",
+    deferredUntil: null as Date | null,
+    deferredReason: "",
+    discontinueReason: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -72,6 +77,23 @@ export default function PersonTransitionDialog({
       newErrors.reason = "Reason is required";
     }
 
+    // Additional validation for DEFERRED status
+    if (formData.toStatus === "DEFERRED") {
+      if (!formData.deferredUntil) {
+        newErrors.deferredUntil = "Deferral date is required";
+      }
+      if (!formData.deferredReason?.trim()) {
+        newErrors.deferredReason = "Deferral reason is required";
+      }
+    }
+
+    // Additional validation for DISCONTINUED status
+    if (formData.toStatus === "DISCONTINUED") {
+      if (!formData.discontinueReason?.trim()) {
+        newErrors.discontinueReason = "Discontinuation reason is required";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -80,7 +102,28 @@ export default function PersonTransitionDialog({
     if (!validateForm()) return;
 
     try {
-      await transition.mutateAsync(formData);
+      // Prepare payload based on status type
+      const payload: {
+        toStatus: string;
+        reason: string;
+        deferredUntil?: string | null;
+        deferredReason?: string;
+        discontinueReason?: string;
+      } = {
+        toStatus: formData.toStatus,
+        reason: formData.reason,
+      };
+
+      if (formData.toStatus === "DEFERRED") {
+        payload.deferredUntil = formData.deferredUntil?.toISOString() || null;
+        payload.deferredReason = formData.deferredReason;
+      }
+
+      if (formData.toStatus === "DISCONTINUED") {
+        payload.discontinueReason = formData.discontinueReason;
+      }
+
+      await transition.mutateAsync(payload);
       enqueueSnackbar("Status updated successfully", { variant: "success" });
       handleClose();
       // Call onSuccess callback if provided
@@ -100,12 +143,15 @@ export default function PersonTransitionDialog({
     setFormData({
       toStatus: "",
       reason: "",
+      deferredUntil: null,
+      deferredReason: "",
+      discontinueReason: "",
     });
     setErrors({});
     onClose();
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | Date | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -177,6 +223,66 @@ export default function PersonTransitionDialog({
             rows={3}
             required
           />
+
+          {/* Conditional fields for DEFERRED status */}
+          {formData.toStatus === "DEFERRED" && (
+            <Stack spacing={2}>
+              <TextField
+                label="Deferral Date"
+                type="date"
+                value={
+                  formData.deferredUntil
+                    ? formData.deferredUntil.toISOString().split("T")[0]
+                    : ""
+                }
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : null;
+                  handleChange("deferredUntil", date);
+                }}
+                error={!!errors.deferredUntil}
+                helperText={
+                  errors.deferredUntil ||
+                  "When should this person be reconsidered?"
+                }
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Deferral Reason"
+                value={formData.deferredReason}
+                onChange={(e) => handleChange("deferredReason", e.target.value)}
+                error={!!errors.deferredReason}
+                helperText={
+                  errors.deferredReason || "Why is this person being deferred?"
+                }
+                fullWidth
+                multiline
+                rows={2}
+                required
+              />
+            </Stack>
+          )}
+
+          {/* Conditional fields for DISCONTINUED status */}
+          {formData.toStatus === "DISCONTINUED" && (
+            <TextField
+              label="Discontinuation Reason"
+              value={formData.discontinueReason}
+              onChange={(e) =>
+                handleChange("discontinueReason", e.target.value)
+              }
+              error={!!errors.discontinueReason}
+              helperText={
+                errors.discontinueReason ||
+                "Why is this person being discontinued?"
+              }
+              fullWidth
+              multiline
+              rows={2}
+              required
+            />
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
