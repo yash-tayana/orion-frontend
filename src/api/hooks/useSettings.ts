@@ -6,6 +6,7 @@ export type Settings = {
   meetingLink?: string | null;
   sources?: string[];
   counselingEmbedUrl?: string | null;
+  stagesByStatus?: { [status: string]: string[] };
 };
 
 export function useSettings() {

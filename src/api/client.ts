@@ -13,18 +13,19 @@ export async function fetchJson<T>(
   path: string,
   options: {
     method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
-    body?: JsonValue;
+    body?: JsonValue | FormData;
     headers?: Record<string, string>;
     token?: string | null;
     accept?: string;
   } = {}
 ): Promise<T> {
   const url = `${env.NEXT_PUBLIC_API_BASE_URL}${path}`;
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(options.accept
       ? { Accept: options.accept }
       : { Accept: "application/json" }),
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
   };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
@@ -32,7 +33,11 @@ export async function fetchJson<T>(
   const res = await fetch(url, {
     method: options.method || "GET",
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body
+      ? isFormData
+        ? (options.body as FormData)
+        : JSON.stringify(options.body as JsonValue)
+      : undefined,
     cache: "no-store",
   });
 

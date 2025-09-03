@@ -47,7 +47,7 @@ export default function MsalRedirectHandler() {
         if (response) {
           // Successfully handled redirect, user is now authenticated
           // Redirect to admin people page
-          router.push("/admin/people");
+          router.push("/admin/learners");
         }
       } catch (error) {
         // Don't redirect on error to prevent loops
@@ -68,7 +68,7 @@ export default function MsalRedirectHandler() {
         try {
           const response = await instance.handleRedirectPromise();
           if (response) {
-            router.push("/admin/people");
+            router.push("/admin/learners");
           }
         } catch (error) {
           // Error handling redirect on login page

@@ -23,7 +23,7 @@ export default function AdminLayout({
 
   const title = useMemo(() => {
     if (!pathname) return "";
-    if (pathname.startsWith("/admin/people")) return "People";
+    if (pathname.startsWith("/admin/learners")) return "Learners";
     if (pathname.startsWith("/admin/roster")) return "Candidate-Free Roster";
     if (pathname.startsWith("/admin/settings")) return "Settings";
     if (pathname.startsWith("/admin/profile")) return "Profile";

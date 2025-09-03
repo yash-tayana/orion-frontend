@@ -9,6 +9,8 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import { useSnackbar } from "notistack";
 import { useSettings } from "@/api/hooks/useSettings";
+import { useMe } from "@/api/hooks/useMe";
+import { isAdmin } from "@/utils/rbac";
 
 import Typography from "@mui/material/Typography";
 import Dialog from "@mui/material/Dialog";
@@ -18,11 +20,18 @@ import DialogActions from "@mui/material/DialogActions";
 import PageHeader from "@/components/PageHeader";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
 import LabelIcon from "@mui/icons-material/Label";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import PersonIcon from "@mui/icons-material/Person";
 import { motion } from "framer-motion";
+import StagesDialog from "@/components/StagesDialog";
+import CounselorsTable from "@/components/CounselorsTable";
+import CounselorDialog from "@/components/CounselorDialog";
 import type { ReactElement } from "react";
+import type { Counselor } from "@/api/hooks/useCounselors";
 
 export default function SettingsPage(): ReactElement {
   const { settings, update } = useSettings();
+  const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
   const [meetingLink, setMeetingLink] = useState("");
   const [counselingEmbedUrl, setCounselingEmbedUrl] = useState("");
@@ -30,6 +39,12 @@ export default function SettingsPage(): ReactElement {
   const [newSource, setNewSource] = useState("");
   const [openMeeting, setOpenMeeting] = useState(false);
   const [openSources, setOpenSources] = useState(false);
+  const [openStages, setOpenStages] = useState(false);
+  const [openCounselors, setOpenCounselors] = useState(false);
+  const [openCounselorDialog, setOpenCounselorDialog] = useState(false);
+  const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(
+    null
+  );
 
   useEffect(() => {
     if (settings.data) {
@@ -81,7 +96,8 @@ export default function SettingsPage(): ReactElement {
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
+            md: "repeat(2, 1fr)",
+            lg: "repeat(3, 1fr)",
           },
           gap: 2,
         }}
@@ -126,10 +142,62 @@ export default function SettingsPage(): ReactElement {
               <Typography variant="h6">Sources</Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary" mt={0.5}>
-              Manage source tags used in People
+              Manage source tags used in Learners
             </Typography>
           </Paper>
         </motion.div>
+
+        {/* Stages tile - Admin only */}
+        {isAdmin(me?.role) && (
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Paper
+              sx={{
+                p: 2.5,
+                border: "1px solid rgba(148,163,184,0.12)",
+                borderRadius: 2,
+                cursor: "pointer",
+              }}
+              onClick={() => setOpenStages(true)}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <TimelineIcon color="primary" />
+                <Typography variant="h6">Stages</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mt={0.5}>
+                Manage micro-stages for each status
+              </Typography>
+            </Paper>
+          </motion.div>
+        )}
+
+        {/* Counselors tile - Admin only */}
+        {isAdmin(me?.role) && (
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Paper
+              sx={{
+                p: 2.5,
+                border: "1px solid rgba(148,163,184,0.12)",
+                borderRadius: 2,
+                cursor: "pointer",
+              }}
+              onClick={() => setOpenCounselors(true)}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <PersonIcon color="primary" />
+                <Typography variant="h6">Counselors</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mt={0.5}>
+                Manage counseling providers and embed URLs
+              </Typography>
+            </Paper>
+          </motion.div>
+        )}
       </Box>
 
       <Dialog
@@ -224,6 +292,44 @@ export default function SettingsPage(): ReactElement {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Stages Dialog */}
+      <StagesDialog open={openStages} onClose={() => setOpenStages(false)} />
+
+      {/* Counselors Dialog */}
+      <Dialog
+        open={openCounselors}
+        onClose={() => setOpenCounselors(false)}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle>Counselors Management</DialogTitle>
+        <DialogContent>
+          <CounselorsTable
+            onCreate={() => {
+              setSelectedCounselor(null);
+              setOpenCounselorDialog(true);
+            }}
+            onEdit={(counselor) => {
+              setSelectedCounselor(counselor);
+              setOpenCounselorDialog(true);
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCounselors(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Counselor Create/Edit Dialog */}
+      <CounselorDialog
+        open={openCounselorDialog}
+        onClose={() => {
+          setOpenCounselorDialog(false);
+          setSelectedCounselor(null);
+        }}
+        counselor={selectedCounselor}
+      />
     </>
   );
 }

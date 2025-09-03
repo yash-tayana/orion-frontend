@@ -6,7 +6,13 @@ export type UserProfile = {
   id: string;
   email: string;
   displayName: string | null;
-  role: "ADMIN" | "USER";
+  role:
+    | "ADMIN"
+    | "SUPER_ADMIN"
+    | "USER"
+    | "COUNSELOR"
+    | "MARKETER"
+    | "TRAINING_ADMIN";
   firstLoginAt?: string | null;
   lastLoginAt?: string | null;
 };

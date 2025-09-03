@@ -187,7 +187,7 @@ export default function PersonTransitionDialog({
               <strong>Current Status:</strong> {STATUS_LABELS[person.status]}
             </p>
             <p>
-              <strong>Person:</strong> {person.firstName} {person.lastName}
+              <strong>Learner:</strong> {person.firstName} {person.lastName}
             </p>
           </Box>
 
@@ -242,7 +242,7 @@ export default function PersonTransitionDialog({
                 error={!!errors.deferredUntil}
                 helperText={
                   errors.deferredUntil ||
-                  "When should this person be reconsidered?"
+                  "When should this learner be reconsidered?"
                 }
                 fullWidth
                 required
@@ -254,7 +254,7 @@ export default function PersonTransitionDialog({
                 onChange={(e) => handleChange("deferredReason", e.target.value)}
                 error={!!errors.deferredReason}
                 helperText={
-                  errors.deferredReason || "Why is this person being deferred?"
+                  errors.deferredReason || "Why is this learner being deferred?"
                 }
                 fullWidth
                 multiline
@@ -275,7 +275,7 @@ export default function PersonTransitionDialog({
               error={!!errors.discontinueReason}
               helperText={
                 errors.discontinueReason ||
-                "Why is this person being discontinued?"
+                "Why is this learner being discontinued?"
               }
               fullWidth
               multiline

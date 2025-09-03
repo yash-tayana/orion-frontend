@@ -9,6 +9,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -29,7 +30,16 @@ export default function AppSidebar({
   const { data: me } = useMe();
 
   const items = [
-    { href: "/admin/people", label: "People", icon: <PeopleAltIcon /> },
+    ...(isAdmin(me?.role)
+      ? [
+          {
+            href: "/admin/dashboard",
+            label: "Dashboard",
+            icon: <DashboardIcon />,
+          },
+        ]
+      : []),
+    { href: "/admin/learners", label: "Learners", icon: <PeopleAltIcon /> },
     { href: "/admin/roster", label: "Roster", icon: <AssignmentIcon /> },
     ...(isAdmin(me?.role)
       ? [{ href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> }]

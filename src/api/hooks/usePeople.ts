@@ -8,8 +8,10 @@ export type Person = {
   lastName?: string | null;
   email?: string | null;
   phone?: string | null;
+  city?: string | null;
   linkedinUrl?: string | null;
   source?: string | null;
+  stage?: string | null;
   status:
     | "SUSPECT"
     | "LEAD"
@@ -27,46 +29,96 @@ export type Person = {
   }[];
 };
 
-export function usePeople(params: { status?: string; q?: string }) {
+export type CreatePersonRequest = {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  linkedinUrl?: string;
+  source?: string;
+  stage?: string;
+  status?: string;
+};
+
+export type PatchPersonRequest = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  linkedinUrl?: string;
+  source?: string;
+  stage?: string;
+  status?: string;
+};
+
+export function usePeople(params: {
+  status?: string;
+  stage?: string;
+  source?: string;
+  q?: string;
+}) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
 
   const list = useQuery<Person[]>({
     queryKey: ["people", params],
-    queryFn: () =>
-      fetchJson<Person[]>(
-        `/api/v1/people?status=${encodeURIComponent(
-          params.status || ""
-        )}&q=${encodeURIComponent(params.q || "")}`,
-        { token: accessToken || undefined }
-      ),
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      if (params.status) searchParams.set("status", params.status);
+      if (params.stage) searchParams.set("stage", params.stage);
+      if (params.source) searchParams.set("source", params.source);
+      if (params.q) searchParams.set("q", params.q);
+
+      const url = `/api/v1/people?${searchParams.toString()}`;
+      console.log("People API URL:", url);
+
+      return fetchJson<Person[]>(url, {
+        token: accessToken || undefined,
+      });
+    },
     enabled: Boolean(accessToken),
   });
 
-  const create = useMutation({
-    mutationFn: (body: Partial<Person>) =>
-      fetchJson<Person>("/api/v1/people", {
+  const createLearner = useMutation({
+    mutationFn: (payload: CreatePersonRequest) => {
+      console.log("Create learner payload:", JSON.stringify(payload, null, 2));
+      return fetchJson<Person>("/api/v1/people", {
         method: "POST",
-        body,
+        body: payload,
         token: accessToken || undefined,
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["people"] }),
   });
 
-  const update = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Person> }) =>
-      fetchJson<Person>(`/api/v1/people/${id}`, {
+  const patchLearner = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: PatchPersonRequest;
+    }) => {
+      console.log("Patch learner payload:", JSON.stringify(payload, null, 2));
+      return fetchJson<Person>(`/api/v1/people/${id}`, {
         method: "PATCH",
-        body,
+        body: payload,
         token: accessToken || undefined,
-      }),
+      });
+    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["people"] });
       queryClient.invalidateQueries({ queryKey: ["person", id] });
     },
   });
 
-  return { list, create, update } as const;
+  // Legacy aliases for backward compatibility
+  const create = createLearner;
+  const update = patchLearner;
+
+  return { list, createLearner, patchLearner, create, update } as const;
 }
 
 export default usePeople;

@@ -23,7 +23,7 @@ export default function LoginPage(): ReactElement {
   useEffect(() => {
     // Redirect if authenticated and have access token
     if (isAuthenticated && accessToken) {
-      router.replace("/admin/people");
+      router.replace("/admin/learners");
     }
   }, [isAuthenticated, accessToken, router]);
 
