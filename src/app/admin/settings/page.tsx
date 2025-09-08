@@ -18,7 +18,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import PageHeader from "@/components/PageHeader";
-import VideoCallIcon from "@mui/icons-material/VideoCall";
+
 import LabelIcon from "@mui/icons-material/Label";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import PersonIcon from "@mui/icons-material/Person";
@@ -33,11 +33,8 @@ export default function SettingsPage(): ReactElement {
   const { settings, update } = useSettings();
   const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
-  const [meetingLink, setMeetingLink] = useState("");
-  const [counselingEmbedUrl, setCounselingEmbedUrl] = useState("");
   const [sources, setSources] = useState<string[]>([]);
   const [newSource, setNewSource] = useState("");
-  const [openMeeting, setOpenMeeting] = useState(false);
   const [openSources, setOpenSources] = useState(false);
   const [openStages, setOpenStages] = useState(false);
   const [openCounselors, setOpenCounselors] = useState(false);
@@ -48,8 +45,6 @@ export default function SettingsPage(): ReactElement {
 
   useEffect(() => {
     if (settings.data) {
-      setMeetingLink(settings.data.meetingLink || "");
-      setCounselingEmbedUrl(settings.data.counselingEmbedUrl || "");
       setSources(settings.data.sources || []);
     }
   }, [settings.data]);
@@ -63,14 +58,6 @@ export default function SettingsPage(): ReactElement {
 
       // Ensure all values are properly formatted
       const payload: Record<string, unknown> = {};
-
-      if (meetingLink.trim()) {
-        payload.meetingLink = meetingLink.trim();
-      }
-
-      if (counselingEmbedUrl.trim()) {
-        payload.counselingEmbedUrl = counselingEmbedUrl.trim();
-      }
 
       if (cleanSources.length > 0) {
         payload.sources = cleanSources;
@@ -102,28 +89,6 @@ export default function SettingsPage(): ReactElement {
           gap: 2,
         }}
       >
-        <motion.div
-          whileHover={{ y: -2 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-          <Paper
-            sx={{
-              p: 2.5,
-              border: "1px solid rgba(148,163,184,0.12)",
-              borderRadius: 2,
-              cursor: "pointer",
-            }}
-            onClick={() => setOpenMeeting(true)}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <VideoCallIcon color="primary" />
-              <Typography variant="h6">Counseling & Meeting</Typography>
-            </Stack>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
-              Configure meeting link and counseling embed URL
-            </Typography>
-          </Paper>
-        </motion.div>
         <motion.div
           whileHover={{ y: -2 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -199,43 +164,6 @@ export default function SettingsPage(): ReactElement {
           </motion.div>
         )}
       </Box>
-
-      <Dialog
-        open={openMeeting}
-        onClose={() => setOpenMeeting(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Counseling & Meeting</DialogTitle>
-        <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-        >
-          <TextField
-            label="Default Meeting Link"
-            value={meetingLink}
-            onChange={(e) => setMeetingLink(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Counseling Embed URL"
-            value={counselingEmbedUrl}
-            onChange={(e) => setCounselingEmbedUrl(e.target.value)}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenMeeting(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={async () => {
-              await onSave();
-              setOpenMeeting(false);
-            }}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog
         open={openSources}

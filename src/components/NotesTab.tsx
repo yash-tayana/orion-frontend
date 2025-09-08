@@ -92,10 +92,28 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
+  const getAbsoluteUrl = (url: string): string => {
+    if (url.startsWith("http")) {
+      return url;
+    }
+
+    // Log warning for relative URLs in development
+    if (process.env.NODE_ENV === "development") {
+      console.warn("NotesTab: Relative attachment URL detected:", url);
+    }
+
+    // Safety fallback: prefix with API base URL
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "";
+    return `${baseUrl}/${url.replace(/^\/+/, "")}`;
+  };
+
   const renderAttachment = (attachment: unknown) => {
     const att = attachment as Record<string, unknown>;
     const mimeType = att.mimeType as string;
     const sizeBytes = att.sizeBytes as number;
+    const rawUrl = att.url as string;
+    const absoluteUrl = getAbsoluteUrl(rawUrl);
     const isImage = mimeType.startsWith("image/");
     const isPdf = mimeType === "application/pdf";
 
@@ -114,11 +132,11 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
             },
           }}
           onClick={() =>
-            window.open(att.url as string, "_blank", "noopener,noreferrer")
+            window.open(absoluteUrl, "_blank", "noopener,noreferrer")
           }
         >
           <img
-            src={att.url as string}
+            src={absoluteUrl}
             alt={att.fileName as string}
             style={{
               width: "100%",
@@ -155,7 +173,7 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
           <Button
             size="small"
             variant="outlined"
-            href={att.url as string}
+            href={absoluteUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -185,12 +203,7 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
             {formatFileSize(sizeBytes)}
           </Typography>
         </Box>
-        <Button
-          size="small"
-          variant="outlined"
-          href={att.url as string}
-          download
-        >
+        <Button size="small" variant="outlined" href={absoluteUrl} download>
           Download
         </Button>
       </Box>

@@ -30,32 +30,19 @@ export default function RosterPage(): ReactElement {
 
   const onExport = useCallback(async () => {
     try {
-      const response = await fetch("/api/v1/roster", {
+      const response = await fetch("/api/v1/roster?format=csv", {
         headers: {
           Accept: "text/csv",
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to download CSV");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to download CSV");
       }
 
       const blob = await response.blob();
-      const contentDisposition = response.headers.get("content-disposition");
-      let filename = "roster.csv";
-
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      } else {
-        // Fallback to date-based filename
-        const today = new Date().toISOString().split("T")[0];
-        filename = `roster_${today}.csv`;
-      }
-
-      downloadBlobCsv(blob, filename);
+      downloadBlobCsv(blob, "candidate-free-roster.csv");
       enqueueSnackbar("Roster CSV downloaded", { variant: "success" });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to export CSV";

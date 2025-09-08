@@ -12,6 +12,15 @@ import StatusChip from "@/components/StatusChip";
 import Button from "@mui/material/Button";
 import { useMe } from "@/api/hooks/useMe";
 import { isAdmin, canViewNotes } from "@/utils/rbac";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import { useSnackbar } from "notistack";
+import { useSettings } from "@/api/hooks/useSettings";
+import { fetchJson } from "@/api/client";
+import { useAuth } from "@/auth/useAuth";
+import { ApiError } from "@/api/errors";
 
 import { formatDistanceToNow } from "date-fns";
 import PersonTransitionDialog from "@/components/PersonTransitionDialog";
@@ -25,19 +34,83 @@ import type { ReactElement } from "react";
 export default function LearnerPanel(): ReactElement {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { data } = usePerson(params.id);
+  const { data, refetch } = usePerson(params.id);
   const { transitions } = useTransitions(params.id || "");
+  const { settings } = useSettings();
+  const { enqueueSnackbar } = useSnackbar();
+  const { accessToken } = useAuth();
 
   const { data: me } = useMe();
   const [promoteOpen, setPromoteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState(0);
+  const [stageUpdating, setStageUpdating] = useState(false);
 
   const canPromote = useMemo(
     () =>
       isAdmin(me?.role) && data && ["SUSPECT", "LEAD"].includes(data.status),
     [me?.role, data]
   );
+
+  const handleStageChange = async (newStage: string) => {
+    if (!data || stageUpdating) return;
+
+    setStageUpdating(true);
+    try {
+      // Log the PATCH URL/payload in development
+      if (process.env.NODE_ENV === "development") {
+        console.log("Stage PATCH URL:", `/api/v1/learners/${data.id}/stage`);
+        console.log("Stage PATCH payload:", { stage: newStage });
+      }
+
+      try {
+        // Try the specific stage endpoint first
+        await fetchJson(`/api/v1/learners/${data.id}/stage`, {
+          method: "PATCH",
+          body: { stage: newStage },
+          token: accessToken || undefined,
+        });
+      } catch (error: unknown) {
+        // If the specific endpoint doesn't exist (404), fall back to general people PATCH
+        if (error instanceof ApiError && error.status === 404) {
+          console.log(
+            "Stage-specific endpoint not found, using general people PATCH"
+          );
+          await fetchJson(`/api/v1/people/${data.id}`, {
+            method: "PATCH",
+            body: { stage: newStage },
+            token: accessToken || undefined,
+          });
+        } else {
+          // Handle specific error codes
+          if (
+            error instanceof ApiError &&
+            error.code === "INVALID_STAGE_FOR_STATUS"
+          ) {
+            enqueueSnackbar(
+              error.message || "Invalid stage for current status",
+              {
+                variant: "error",
+              }
+            );
+            // Reset to server value by refetching
+            await refetch();
+            return;
+          }
+          throw error;
+        }
+      }
+
+      enqueueSnackbar("Stage updated", { variant: "success" });
+      await refetch();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update stage";
+      enqueueSnackbar(message, { variant: "error" });
+    } finally {
+      setStageUpdating(false);
+    }
+  };
 
   if (!data) {
     return (
@@ -166,6 +239,38 @@ export default function LearnerPanel(): ReactElement {
                   {data.source || "Unknown"}
                 </Box>
               </Box>
+              {isAdmin(me?.role) && (
+                <Box>
+                  <Box
+                    fontWeight={600}
+                    color="text.secondary"
+                    fontSize="0.875rem"
+                    mb={1}
+                  >
+                    Stage
+                  </Box>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Stage</InputLabel>
+                    <Select
+                      value={data.stage || ""}
+                      onChange={(e) => handleStageChange(e.target.value)}
+                      disabled={
+                        stageUpdating ||
+                        !settings.data?.stagesByStatus?.[data.status]
+                      }
+                      label="Stage"
+                    >
+                      {settings.data?.stagesByStatus?.[data.status]?.map(
+                        (stage) => (
+                          <MenuItem key={stage} value={stage}>
+                            {stage}
+                          </MenuItem>
+                        )
+                      )}
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
               <Box>
                 <Box
                   fontWeight={600}

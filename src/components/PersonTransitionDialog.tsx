@@ -179,7 +179,7 @@ export default function PersonTransitionDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Update Person Status</DialogTitle>
+      <DialogTitle>Update Learner Status</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={3} pt={1}>
           <Box>
