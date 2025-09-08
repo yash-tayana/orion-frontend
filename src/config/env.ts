@@ -21,7 +21,8 @@ export const env: PublicEnv = (() => {
       process.env.NEXT_PUBLIC_AZURE_TENANT_ID ||
       "e388d6da-c391-4e14-b2b3-1df356c587ed",
     NEXT_PUBLIC_API_BASE_URL:
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000",
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      "https://orion-api.tayana-solutions.com",
     NEXT_PUBLIC_AZURE_API_AUDIENCE:
       process.env.NEXT_PUBLIC_AZURE_API_AUDIENCE ||
       "api://62cbe778-2e7e-49f3-a659-c6b59bfc6a7f",
