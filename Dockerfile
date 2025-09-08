@@ -1,40 +1,29 @@
-FROM node:22-alpine AS base
-RUN apk add --no-cache libc6-compat
+# Use official Node.js LTS image
+FROM node:20-alpine AS builder
+
+# Set working directory
 WORKDIR /app
 
-FROM base AS deps
-# Install pnpm
-RUN corepack enable || true && corepack prepare pnpm@9.12.3 --activate || npm i -g pnpm@9
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod=false
+# Copy package files and install dependencies
+COPY package.json package-lock.json* ./
+RUN npm install --frozen-lockfile
 
-FROM base AS builder
-
-ARG NEXT_PUBLIC_API_BASE_URL
-ARG NEXT_PUBLIC_AZURE_CLIENT_ID
-ARG NEXT_PUBLIC_AZURE_TENANT_ID
-ARG NEXT_PUBLIC_AZURE_API_AUDIENCE
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
-    NEXT_PUBLIC_AZURE_CLIENT_ID=$NEXT_PUBLIC_AZURE_CLIENT_ID \
-    NEXT_PUBLIC_AZURE_TENANT_ID=$NEXT_PUBLIC_AZURE_TENANT_ID \
-    NEXT_PUBLIC_AZURE_API_AUDIENCE=$NEXT_PUBLIC_AZURE_API_AUDIENCE
-
-COPY --from=deps /app/node_modules ./node_modules
+# Copy rest of the project and build
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
-ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
-WORKDIR /app
-RUN apk add --no-cache libc6-compat
-USER node
+# Production image
+FROM node:20-alpine AS runner
 
-# If using Next.js standalone output (see note below)
-COPY --chown=node:node --from=builder /app/public ./public
-COPY --chown=node:node --from=builder /app/.next/standalone ./standalone
-COPY --chown=node:node --from=builder /app/.next/static ./.next/static
+WORKDIR /app
+
+# Copy only the build output and production deps
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
-ENV PORT=3000
-CMD ["node", "standalone/server.js"]
+
+# Run Next.js in production mode
+CMD ["npm", "run", "start"]
