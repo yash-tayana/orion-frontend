@@ -48,11 +48,12 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          args: |
-            NEXT_PUBLIC_API_BASE_URL=dev.api.com
-            NEXT_PUBLIC_AZURE_CLIENT_ID=1234567890
-            NEXT_PUBLIC_AZURE_TENANT_ID=1234567890
-            NEXT_PUBLIC_AZURE_API_AUDIENCE=1234567890
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+            NEXT_PUBLIC_AZURE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AZURE_CLIENT_ID }}
+            NEXT_PUBLIC_AZURE_TENANT_ID=${{ secrets.NEXT_PUBLIC_AZURE_TENANT_ID }}
+            NEXT_PUBLIC_AZURE_API_AUDIENCE=${{ secrets.NEXT_PUBLIC_AZURE_API_AUDIENCE }}
+          file: ./Dockerfile
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
