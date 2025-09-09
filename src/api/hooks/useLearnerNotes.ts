@@ -71,11 +71,15 @@ export function useLearnerNotes(learnerId: string) {
   });
 
   const deleteNote = useMutation({
-    mutationFn: (noteId: string) =>
-      fetchJson(`/api/v1/learners/${learnerId}/notes/${noteId}`, {
+    mutationFn: async (noteId: string) => {
+      // Expect 204 No Content; fetchJson handles non-OK by throwing
+      await fetchJson(`/api/v1/learners/${learnerId}/notes/${noteId}`, {
         method: "DELETE",
         token: accessToken || undefined,
-      }),
+        accept: "text/plain",
+      });
+      return undefined as void;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["learnerNotes", learnerId] });
     },

@@ -26,6 +26,7 @@ import { canViewNotes, canDeleteNote } from "@/utils/rbac";
 import EmptyState from "@/components/EmptyState";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type { ReactElement } from "react";
+import { ApiError } from "@/api/errors";
 
 interface NotesTabProps {
   learnerId: string;
@@ -71,10 +72,18 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
       setDeleteDialogOpen(false);
       setNoteToDelete(null);
       enqueueSnackbar("Note deleted", { variant: "success" });
+      // Ensure UI reflects deletion promptly
+      await notes.refetch();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete note";
-      enqueueSnackbar(errorMessage, { variant: "error" });
+      if (error instanceof ApiError && error.status === 403) {
+        enqueueSnackbar("You can only delete your own note", {
+          variant: "error",
+        });
+      } else {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to delete note";
+        enqueueSnackbar(errorMessage, { variant: "error" });
+      }
     }
   };
 
