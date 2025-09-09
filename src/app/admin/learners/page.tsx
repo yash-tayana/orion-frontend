@@ -32,6 +32,9 @@ import EmptyState from "@/components/EmptyState";
 import CreateLearnerDialog from "@/components/CreateLearnerDialog";
 import EditLearnerDialog from "@/components/EditLearnerDialog";
 import StatusChip from "@/components/StatusChip";
+import { fetchJson } from "@/api/client";
+import { useAuth } from "@/auth/useAuth";
+import { ApiError } from "@/api/errors";
 
 export default function LearnersPage(): React.ReactElement {
   const { data: me } = useMe();
@@ -39,11 +42,14 @@ export default function LearnersPage(): React.ReactElement {
   const { enqueueSnackbar } = useSnackbar();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { accessToken } = useAuth();
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [stage, setStage] = useState("");
   const [source, setSource] = useState("");
+  const [owner, setOwner] = useState<string>("");
+  const [ownerUserId, setOwnerUserId] = useState<string>("");
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -58,11 +64,15 @@ export default function LearnersPage(): React.ReactElement {
     const stageParam = searchParams.get("stage");
     const sourceParam = searchParams.get("source");
     const qParam = searchParams.get("q");
+    const ownerParam = searchParams.get("owner");
+    const ownerUserIdParam = searchParams.get("ownerUserId");
 
     if (statusParam) setStatus(statusParam);
     if (stageParam) setStage(stageParam);
     if (sourceParam) setSource(sourceParam);
     if (qParam) setQ(qParam);
+    if (ownerParam === "unassigned") setOwner("unassigned");
+    if (ownerUserIdParam) setOwnerUserId(ownerUserIdParam);
   }, [searchParams]);
 
   // URL synchronization without navigation (no re-mount)
@@ -72,6 +82,8 @@ export default function LearnersPage(): React.ReactElement {
       stage?: string;
       source?: string;
       q?: string;
+      owner?: string;
+      ownerUserId?: string;
     }) => {
       const url = new URL(window.location.href);
       Object.entries(newParams).forEach(([key, value]) => {
@@ -110,7 +122,20 @@ export default function LearnersPage(): React.ReactElement {
     stage: stage || undefined,
     source: source || undefined,
     q: q || undefined,
+    owner: owner === "unassigned" ? "unassigned" : undefined,
+    ownerUserId: ownerUserId || undefined,
   });
+
+  // Debug preview of owner objects (temporary)
+  useEffect(() => {
+    if (list.data && list.data.length > 0) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        "People rows preview:",
+        list.data.slice(0, 3).map((r) => ({ id: r.id, owner: r.owner }))
+      );
+    }
+  }, [list.data]);
 
   // Handle backend validation errors
   useEffect(() => {
@@ -130,24 +155,24 @@ export default function LearnersPage(): React.ReactElement {
         field: "name",
         headerName: "Name",
         flex: 1,
-        renderCell: (params) => (
+        renderCell: (params: { row?: Person } | null) => (
           <Box display="flex" alignItems="center" gap={1}>
             <Box>
               <Box fontWeight={600}>
-                {params.row.firstName} {params.row.lastName}
+                {params?.row?.firstName} {params?.row?.lastName}
               </Box>
               <Box fontSize="0.875rem" color="text.secondary">
-                {params.row.email}
+                {params?.row?.email}
               </Box>
             </Box>
-            {params.row.linkedinUrl && (
+            {params?.row?.linkedinUrl && (
               <Tooltip title="View LinkedIn Profile">
                 <IconButton
                   size="small"
                   onClick={(e) => {
                     e.stopPropagation();
                     window.open(
-                      params.row.linkedinUrl,
+                      params?.row?.linkedinUrl || undefined,
                       "_blank",
                       "noopener,noreferrer"
                     );
@@ -165,7 +190,7 @@ export default function LearnersPage(): React.ReactElement {
         field: "phone",
         headerName: "Phone",
         width: 150,
-        renderCell: (params) => (
+        renderCell: (params: { row?: Person } | null) => (
           <Box
             sx={{
               overflow: "hidden",
@@ -173,9 +198,9 @@ export default function LearnersPage(): React.ReactElement {
               whiteSpace: "nowrap",
               maxWidth: "100%",
             }}
-            title={params.row.phone || "No phone"}
+            title={params?.row?.phone || "No phone"}
           >
-            {params.row.phone || "—"}
+            {params?.row?.phone || "—"}
           </Box>
         ),
       },
@@ -183,7 +208,7 @@ export default function LearnersPage(): React.ReactElement {
         field: "city",
         headerName: "City",
         width: 120,
-        renderCell: (params) => (
+        renderCell: (params: { row?: Person } | null) => (
           <Box
             sx={{
               overflow: "hidden",
@@ -191,9 +216,9 @@ export default function LearnersPage(): React.ReactElement {
               whiteSpace: "nowrap",
               maxWidth: "100%",
             }}
-            title={params.row.city || "No city"}
+            title={params?.row?.city || "No city"}
           >
-            {params.row.city || "—"}
+            {params?.row?.city || "—"}
           </Box>
         ),
       },
@@ -201,7 +226,7 @@ export default function LearnersPage(): React.ReactElement {
         field: "source",
         headerName: "Source",
         width: 120,
-        renderCell: (params) => (
+        renderCell: (params: { row?: Person } | null) => (
           <Box
             sx={{
               px: 1.5,
@@ -214,7 +239,7 @@ export default function LearnersPage(): React.ReactElement {
               textTransform: "uppercase",
             }}
           >
-            {params.row.source || "Unknown"}
+            {params?.row?.source || "Unknown"}
           </Box>
         ),
       },
@@ -222,66 +247,116 @@ export default function LearnersPage(): React.ReactElement {
         field: "status",
         headerName: "Status",
         width: 140,
-        renderCell: (params) => <StatusChip status={params.row.status} />,
+        renderCell: (params: { row?: Person } | null) => (
+          <StatusChip status={params?.row?.status as any} />
+        ),
       },
       {
         field: "stage",
         headerName: "Stage",
         width: 120,
-        renderCell: (params) => (
+        renderCell: (params: { row?: Person } | null) => (
           <Chip
-            label={params.row.stage || "None"}
+            label={params?.row?.stage || "None"}
             size="small"
             variant="outlined"
-            color={params.row.stage ? "primary" : "default"}
+            color={params?.row?.stage ? "primary" : "default"}
           />
         ),
+      },
+      {
+        field: "owner",
+        headerName: "Owner",
+        width: 220,
+        sortable: false,
+        valueGetter: (params: { row?: Person } | null) => {
+          const o = params?.row?.owner as Person["owner"] | null | undefined;
+          return (
+            (o?.displayName && o.displayName.trim()) || o?.email || "Unassigned"
+          );
+        },
+        renderCell: (params: { row?: Person } | null) => {
+          const o = params?.row?.owner as Person["owner"] | null | undefined;
+          const label =
+            (o?.displayName && o.displayName.trim()) ||
+            o?.email ||
+            "Unassigned";
+          return <span title={label}>{label}</span>;
+        },
       },
       {
         field: "createdAt",
         headerName: "Added",
         width: 120,
-        renderCell: (params) =>
-          new Date(params.row.createdAt).toLocaleDateString(),
+        renderCell: (params: { row?: Person } | null) =>
+          params?.row?.createdAt
+            ? new Date(params.row.createdAt).toLocaleDateString()
+            : "-",
       },
       {
         field: "actions",
         headerName: "",
         width: 80,
         sortable: false,
-        renderCell: (params) => (
-          <KebabMenu
-            items={[
-              {
-                label: "View details",
-                onClick: () => router.push(`/admin/learners/${params.row.id}`),
+        renderCell: (params: { row?: Person } | null) => {
+          const items: {
+            label: string;
+            onClick: () => void;
+            disabled?: boolean;
+          }[] = [
+            {
+              label: "View details",
+              onClick: () =>
+                params?.row && router.push(`/admin/learners/${params.row.id}`),
+            },
+          ];
+          if (params?.row && params.row.ownerUserId !== me?.id) {
+            items.push({
+              label: "Assign to me",
+              onClick: async () => {
+                try {
+                  await fetch(`/api/v1/people/${params.row!.id}/owner`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ownerUserId: me?.id }),
+                  });
+                  enqueueSnackbar("Assigned to you", { variant: "success" });
+                  await list.refetch();
+                } catch {
+                  enqueueSnackbar(
+                    "You can only assign yourself; contact admin for other changes.",
+                    { variant: "error" }
+                  );
+                }
               },
-              ...(isAdmin(me?.role)
-                ? [
-                    {
-                      label: "Edit",
-                      onClick: () => {
-                        setSelectedPerson(params.row);
-                        setOpenEdit(true);
-                      },
-                    },
-                    {
-                      label: "Set Stage",
-                      onClick: () => {
-                        setSelectedPerson(params.row);
-                        setSetStageOpen(true);
-                      },
-                    },
-                    {
-                      label: "Promote",
-                      onClick: () =>
-                        router.push(`/admin/learners/${params.row.id}`),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        ),
+            });
+          }
+          if (isAdmin(me?.role)) {
+            items.push(
+              {
+                label: "Edit",
+                onClick: () => {
+                  if (params?.row) setSelectedPerson(params.row);
+                  setOpenEdit(true);
+                },
+              },
+              {
+                label: "Set Stage",
+                onClick: () => {
+                  if (params?.row) setSelectedPerson(params.row);
+                  setSetStageOpen(true);
+                },
+              },
+              {
+                label: "Promote",
+                onClick: () =>
+                  params?.row &&
+                  router.push(`/admin/learners/${params.row.id}`),
+              }
+            );
+          }
+          return <KebabMenu items={items} />;
+        },
       },
     ],
     [me?.role, router]
@@ -370,6 +445,42 @@ export default function LearnersPage(): React.ReactElement {
                 {sourceOption}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+        {/* Owner Filter */}
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Owner</InputLabel>
+          <Select
+            value={ownerUserId || owner}
+            label="Owner"
+            onChange={(e) => {
+              const v = e.target.value as string;
+              if (v === "") {
+                setOwner("");
+                setOwnerUserId("");
+                updateURL({ owner: "", ownerUserId: "" });
+              } else if (v === "unassigned") {
+                setOwner("unassigned");
+                setOwnerUserId("");
+                updateURL({ owner: "unassigned", ownerUserId: "" });
+              } else if (v === "me") {
+                const meId = me?.id || "";
+                setOwner("");
+                setOwnerUserId(meId);
+                updateURL({ owner: "", ownerUserId: meId });
+              } else {
+                setOwner("");
+                setOwnerUserId(v);
+                updateURL({ owner: "", ownerUserId: v });
+              }
+            }}
+          >
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
+            <MenuItem value="unassigned">Unassigned</MenuItem>
+            <MenuItem value="me">Me</MenuItem>
+            {/* TODO: populate users list when available */}
           </Select>
         </FormControl>
         <Button

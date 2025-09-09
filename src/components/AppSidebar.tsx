@@ -36,7 +36,7 @@ export default function AppSidebar({
       icon: <DashboardIcon />,
     },
     { href: "/admin/learners", label: "Learners", icon: <PeopleAltIcon /> },
-    { href: "/admin/roster", label: "Roster", icon: <AssignmentIcon /> },
+    { href: "/admin/calendar", label: "Calendar", icon: <AssignmentIcon /> },
     ...(isAdmin(me?.role)
       ? [{ href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> }]
       : []),

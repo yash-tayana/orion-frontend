@@ -22,6 +22,12 @@ export type Person = {
     | "DISCONTINUED";
   createdAt: string;
   updatedAt: string;
+  ownerUserId?: string | null;
+  owner?: {
+    id: string;
+    displayName: string | null;
+    email: string;
+  } | null;
   transitions?: {
     toStatus: string;
     reason?: string | null;
@@ -58,6 +64,8 @@ export function usePeople(params: {
   stage?: string;
   source?: string;
   q?: string;
+  ownerUserId?: string;
+  owner?: "unassigned";
 }) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
@@ -70,12 +78,31 @@ export function usePeople(params: {
       if (params.stage) searchParams.set("stage", params.stage);
       if (params.source) searchParams.set("source", params.source);
       if (params.q) searchParams.set("q", params.q);
+      // Mutually exclusive owner filters
+      if (params.ownerUserId) {
+        searchParams.set("ownerUserId", params.ownerUserId);
+        searchParams.delete("owner");
+      } else if (params.owner === "unassigned") {
+        searchParams.set("owner", "unassigned");
+        searchParams.delete("ownerUserId");
+      } else {
+        searchParams.delete("owner");
+        searchParams.delete("ownerUserId");
+      }
 
       const url = `/api/v1/people?${searchParams.toString()}`;
       console.log("People API URL:", url);
-
       return fetchJson<Person[]>(url, {
         token: accessToken || undefined,
+      }).then((data) => {
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.debug(
+            "People rows preview:",
+            (data || []).slice(0, 3).map((r) => ({ id: r.id, owner: r.owner }))
+          );
+        }
+        return data;
       });
     },
     enabled: Boolean(accessToken),

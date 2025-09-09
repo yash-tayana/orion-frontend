@@ -1,8 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Box, Paper, Typography, Skeleton, Button } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Paper,
+  Typography,
+  Skeleton,
+  Button,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Card,
+  CardHeader,
+  CardContent,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@mui/material";
 import { motion } from "framer-motion";
 import { useSnackbar } from "notistack";
 import { useMe } from "@/api/hooks/useMe";
@@ -11,6 +29,7 @@ import { isAdmin } from "@/utils/rbac";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
+import { useMetricsLeadOwners } from "@/api/hooks/useMetricsLeadOwners";
 import type { ReactElement } from "react";
 
 export default function DashboardPage(): ReactElement {
@@ -18,6 +37,25 @@ export default function DashboardPage(): ReactElement {
   const { enqueueSnackbar } = useSnackbar();
   const { data: me } = useMe();
   const { data: metrics, isLoading, error, refetch } = useMetricsSummary();
+  const [ownerStatus, setOwnerStatus] = useState("LEAD");
+  const tz = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+    []
+  );
+  const now = useMemo(() => new Date(), []);
+  const start = useMemo(() => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 30);
+    return d.toISOString();
+  }, [now]);
+  const end = useMemo(() => now.toISOString(), [now]);
+  const { series } = useMetricsLeadOwners({
+    status: ownerStatus,
+    start,
+    end,
+    granularity: "day",
+    tz,
+  });
 
   // Allow universal view access: no redirect for non-admins
 
@@ -203,6 +241,75 @@ export default function DashboardPage(): ReactElement {
         <Paper sx={{ p: 3, bgcolor: "rgba(148,163,184,0.05)" }}>
           {renderSourcesChart()}
         </Paper>
+
+        <Card>
+          <CardHeader
+            title="Learner Owner (daily)"
+            action={
+              <Box display="flex" alignItems="center" gap={2} pr={2}>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    label="Status"
+                    value={ownerStatus}
+                    onChange={(e) => setOwnerStatus(e.target.value)}
+                  >
+                    <MenuItem value="LEAD">LEAD</MenuItem>
+                    <MenuItem value="SUSPECT">SUSPECT</MenuItem>
+                  </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary">
+                  Last 30 days · {tz}
+                </Typography>
+              </Box>
+            }
+          />
+          <CardContent>
+            {series.isLoading ? (
+              <Typography variant="body2">Loading…</Typography>
+            ) : !series.data || series.data.series.length === 0 ? (
+              <Typography variant="body2">No data</Typography>
+            ) : (
+              <Table size="small" aria-label="learner-owner-daily">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Owner</TableCell>
+                    <TableCell align="right">Count</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {series.data.series.map((row, idx) => {
+                    const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(row.date)
+                      ? row.date
+                      : new Date(row.date).toISOString().slice(0, 10);
+                    const ownerLabel = row.owner;
+                    return (
+                      <TableRow
+                        key={`${row.date}-${row.owner ?? "unassigned"}-${idx}`}
+                        hover
+                        sx={{ cursor: "pointer" }}
+                        onClick={() => {
+                          const isUnassigned = ownerLabel === "Unassigned";
+                          const qp = isUnassigned
+                            ? `owner=unassigned`
+                            : `owner=${encodeURIComponent(ownerLabel)}`;
+                          router.push(
+                            `/admin/learners?status=${ownerStatus}&${qp}`
+                          );
+                        }}
+                      >
+                        <TableCell>{dateLabel}</TableCell>
+                        <TableCell title={ownerLabel}>{ownerLabel}</TableCell>
+                        <TableCell align="right">{row.count}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );

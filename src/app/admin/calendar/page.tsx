@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState, type ReactElement } from "react";
+import { useCallback, useState, type ReactElement } from "react";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -21,18 +21,8 @@ import { downloadBlobCsv } from "@/utils/csv";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
-import { useRouter } from "next/navigation";
 
-export default function RosterPage(): ReactElement {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/admin/calendar");
-  }, [router]);
-  return <></>;
-}
-
-// Keep file valid by not exporting additional page symbols
-function RosterLegacy(): ReactElement {
+export default function CalendarPage(): ReactElement {
   const { list, downloadCsv } = useRoster();
   const { settings } = useSettings();
   const { enqueueSnackbar } = useSnackbar();
@@ -52,7 +42,7 @@ function RosterLegacy(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Candidate-Free Roster"
+        title="Calendar"
         actions={
           <Stack direction="row" spacing={1}>
             <Button variant="outlined" onClick={onExport}>

@@ -166,7 +166,7 @@ export default function LearnerPanel(): ReactElement {
           </Box>
           <Tabs value={tab} onChange={(_, v) => setTab(v)}>
             <Tab label="Profile" />
-            <Tab label="Counseling" />
+            <Tab label="Appointments" />
             {canViewNotes(me?.role) && <Tab label="Notes" />}
             <Tab label="Transitions" />
           </Tabs>

@@ -187,7 +187,9 @@ export default function CreateLearnerDialog({
 
       await createLearner.mutateAsync(payload);
 
-      enqueueSnackbar("Learner created successfully", { variant: "success" });
+      enqueueSnackbar("Learner created. Owner set to you.", {
+        variant: "success",
+      });
       onClose();
       onSuccess?.();
     } catch (error: unknown) {
