@@ -194,14 +194,19 @@ export default function CreateLearnerDialog({
       const errorObj = error as {
         message?: string;
         details?: Record<string, string>;
+        code?: string;
       };
 
       if (errorObj.details) {
-        // Field-specific errors from backend
         setFieldErrors(errorObj.details as FieldErrors);
         enqueueSnackbar("Please fix the errors below", { variant: "error" });
       } else {
-        // General error
+        if (errorObj.code === "INVALID_PHONE") {
+          setFieldErrors((prev) => ({
+            ...prev,
+            phone: "Please enter a valid phone number",
+          }));
+        }
         enqueueSnackbar(errorObj.message || "Failed to create learner", {
           variant: "error",
           action: (

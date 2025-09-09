@@ -19,8 +19,8 @@ import EmptyState from "@/components/EmptyState";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface CounselorsTableProps {
-  onCreate: () => void;
-  onEdit: (counselor: Counselor) => void;
+  onCreate?: () => void;
+  onEdit?: (counselor: Counselor) => void;
 }
 
 export default function CounselorsTable({
@@ -96,20 +96,24 @@ export default function CounselorsTable({
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: "flex", gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={() => onEdit(params.row)}
-            color="primary"
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => handleDeleteClick(params.row)}
-            color="error"
-          >
-            <DeleteIcon />
-          </IconButton>
+          {onEdit && (
+            <IconButton
+              size="small"
+              onClick={() => onEdit(params.row)}
+              color="primary"
+            >
+              <EditIcon />
+            </IconButton>
+          )}
+          {onEdit && (
+            <IconButton
+              size="small"
+              onClick={() => handleDeleteClick(params.row)}
+              color="error"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -141,9 +145,15 @@ export default function CounselorsTable({
         }}
       >
         <Typography variant="h6">Counselors</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={onCreate}>
-          Add Counselor
-        </Button>
+        {onCreate && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onCreate}
+          >
+            Add Counselor
+          </Button>
+        )}
       </Box>
 
       {/* Filter chips */}
@@ -192,7 +202,7 @@ export default function CounselorsTable({
               <EmptyState
                 title="No counselors found"
                 description="Get started by adding your first counselor."
-                actionLabel="Add your first counselor"
+                actionLabel={onCreate ? "Add your first counselor" : undefined}
                 onAction={onCreate}
               />
             ),

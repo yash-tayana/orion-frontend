@@ -23,34 +23,21 @@ import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 
 export default function RosterPage(): ReactElement {
-  const { list } = useRoster();
+  const { list, downloadCsv } = useRoster();
   const { settings } = useSettings();
   const { enqueueSnackbar } = useSnackbar();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const onExport = useCallback(async () => {
     try {
-      const response = await fetch("/api/v1/roster?format=csv", {
-        headers: {
-          Accept: "text/csv",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to download CSV");
-      }
-
-      const blob = await response.blob();
+      const blob = await downloadCsv();
       downloadBlobCsv(blob, "candidate-free-roster.csv");
       enqueueSnackbar("Roster CSV downloaded", { variant: "success" });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to export CSV";
-      enqueueSnackbar(message, {
-        variant: "error",
-      });
+      enqueueSnackbar(message, { variant: "error" });
     }
-  }, [enqueueSnackbar]);
+  }, [downloadCsv, enqueueSnackbar]);
 
   return (
     <>

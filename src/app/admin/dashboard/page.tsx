@@ -19,12 +19,7 @@ export default function DashboardPage(): ReactElement {
   const { data: me } = useMe();
   const { data: metrics, isLoading, error, refetch } = useMetricsSummary();
 
-  // Redirect non-admins to learners page
-  useEffect(() => {
-    if (me && !isAdmin(me.role)) {
-      router.replace("/admin/learners");
-    }
-  }, [me, router]);
+  // Allow universal view access: no redirect for non-admins
 
   // Handle errors
   useEffect(() => {
@@ -40,10 +35,7 @@ export default function DashboardPage(): ReactElement {
     }
   }, [error, enqueueSnackbar, refetch]);
 
-  // Don't render if not admin
-  if (me && !isAdmin(me.role)) {
-    return <Box>Redirecting...</Box>;
-  }
+  // Hide admin-only actions via conditional checks below; view is allowed for all roles
 
   const totalLearners = metrics
     ? Object.values(metrics.countsByStatus).reduce(

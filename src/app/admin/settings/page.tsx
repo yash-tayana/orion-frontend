@@ -1,33 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMe } from "@/api/hooks/useMe";
+import { useSettings } from "@/api/hooks/useSettings";
+import CounselorDialog from "@/components/CounselorDialog";
+import CounselorsTable from "@/components/CounselorsTable";
+import { isAdmin } from "@/utils/rbac";
 import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import TextField from "@mui/material/TextField";
-import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import { useSnackbar } from "notistack";
-import { useSettings } from "@/api/hooks/useSettings";
-import { useMe } from "@/api/hooks/useMe";
-import { isAdmin } from "@/utils/rbac";
+import { useEffect, useState } from "react";
 
-import Typography from "@mui/material/Typography";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import PageHeader from "@/components/PageHeader";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Typography from "@mui/material/Typography";
 
-import LabelIcon from "@mui/icons-material/Label";
-import TimelineIcon from "@mui/icons-material/Timeline";
-import PersonIcon from "@mui/icons-material/Person";
-import { motion } from "framer-motion";
-import StagesDialog from "@/components/StagesDialog";
-import CounselorsTable from "@/components/CounselorsTable";
-import CounselorDialog from "@/components/CounselorDialog";
-import type { ReactElement } from "react";
 import type { Counselor } from "@/api/hooks/useCounselors";
+import StagesDialog from "@/components/StagesDialog";
+import LabelIcon from "@mui/icons-material/Label";
+import PersonIcon from "@mui/icons-material/Person";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import { motion } from "framer-motion";
+import type { ReactElement } from "react";
 
 export default function SettingsPage(): ReactElement {
   const { settings, update } = useSettings();
@@ -51,24 +51,25 @@ export default function SettingsPage(): ReactElement {
 
   const onSave = async () => {
     try {
-      // Filter out empty sources and trim whitespace
-      const cleanSources = sources
-        .filter((s) => s && typeof s === "string" && s.trim() !== "")
-        .map((s) => s.trim());
+      // Trim, de-dupe (case-insensitive), remove empty
+      const cleanSources = Array.from(
+        new Map(
+          sources
+            .map((s) => (s || "").trim())
+            .filter((s) => s.length > 0)
+            .map((s) => [s.toLowerCase(), s] as const)
+        ).values()
+      );
 
-      // Ensure all values are properly formatted
-      const payload: Record<string, unknown> = {};
+      const payload = { sources: cleanSources };
 
-      if (cleanSources.length > 0) {
-        payload.sources = cleanSources;
-      }
-
-      await update.mutateAsync(payload);
+      await update.mutateAsync(payload as never);
+      // Re-fetch to avoid optimistic masking
+      await settings.refetch();
       enqueueSnackbar("Settings saved", { variant: "success" });
     } catch (e: unknown) {
-      const message =
-        e instanceof Error ? e.message : "Failed to save settings";
-      enqueueSnackbar(message, {
+      const err = e as { message?: string; status?: number };
+      enqueueSnackbar(err.message || "Failed to save settings", {
         variant: "error",
       });
     }
@@ -138,31 +139,29 @@ export default function SettingsPage(): ReactElement {
           </motion.div>
         )}
 
-        {/* Counselors tile - Admin only */}
-        {isAdmin(me?.role) && (
-          <motion.div
-            whileHover={{ y: -2 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        {/* Counselors tile - visible to all signed-in users (view-only for non-admins) */}
+        <motion.div
+          whileHover={{ y: -2 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        >
+          <Paper
+            sx={{
+              p: 2.5,
+              border: "1px solid rgba(148,163,184,0.12)",
+              borderRadius: 2,
+              cursor: "pointer",
+            }}
+            onClick={() => setOpenCounselors(true)}
           >
-            <Paper
-              sx={{
-                p: 2.5,
-                border: "1px solid rgba(148,163,184,0.12)",
-                borderRadius: 2,
-                cursor: "pointer",
-              }}
-              onClick={() => setOpenCounselors(true)}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <PersonIcon color="primary" />
-                <Typography variant="h6">Counselors</Typography>
-              </Stack>
-              <Typography variant="body2" color="text.secondary" mt={0.5}>
-                Manage counseling providers and embed URLs
-              </Typography>
-            </Paper>
-          </motion.div>
-        )}
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <PersonIcon color="primary" />
+              <Typography variant="h6">Counselors</Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary" mt={0.5}>
+              View and manage counseling providers
+            </Typography>
+          </Paper>
+        </motion.div>
       </Box>
 
       <Dialog
@@ -224,34 +223,53 @@ export default function SettingsPage(): ReactElement {
       {/* Stages Dialog */}
       <StagesDialog open={openStages} onClose={() => setOpenStages(false)} />
 
-      {/* Counselors Dialog */}
+      {/* Counselors Dialog (view for all; CRUD gated by admin) */}
       <Dialog
         open={openCounselors}
         onClose={() => setOpenCounselors(false)}
         fullWidth
         maxWidth="lg"
       >
-        <DialogTitle>Counselors Management</DialogTitle>
+        <DialogTitle>Counselors</DialogTitle>
         <DialogContent>
           <CounselorsTable
-            onCreate={() => {
-              setSelectedCounselor(null);
-              setOpenCounselorDialog(true);
-            }}
-            onEdit={(counselor) => {
-              setSelectedCounselor(counselor);
-              setOpenCounselorDialog(true);
-            }}
+            onCreate={
+              isAdmin(me?.role)
+                ? () => {
+                    setSelectedCounselor(null);
+                    setOpenCounselorDialog(true);
+                  }
+                : undefined
+            }
+            onEdit={
+              isAdmin(me?.role)
+                ? (counselor) => {
+                    setSelectedCounselor(counselor);
+                    setOpenCounselorDialog(true);
+                  }
+                : undefined
+            }
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCounselors(false)}>Close</Button>
+          {isAdmin(me?.role) && (
+            <Button
+              variant="contained"
+              onClick={() => {
+                setSelectedCounselor(null);
+                setOpenCounselorDialog(true);
+              }}
+            >
+              Add Counselor
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
-      {/* Counselor Create/Edit Dialog */}
+      {/* Counselor Create/Edit Dialog (admin only, guarded by open state) */}
       <CounselorDialog
-        open={openCounselorDialog}
+        open={openCounselorDialog && isAdmin(me?.role)}
         onClose={() => {
           setOpenCounselorDialog(false);
           setSelectedCounselor(null);

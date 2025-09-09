@@ -15,6 +15,8 @@ import {
   Box,
   CircularProgress,
 } from "@mui/material";
+import { useAuth } from "@/auth/useAuth";
+import { fetchJson } from "@/api/client";
 import { useSnackbar } from "notistack";
 import {
   usePeople,
@@ -39,6 +41,7 @@ interface FormData {
   city: string;
   linkedinUrl: string;
   source: string;
+  stage?: string;
 }
 
 interface FieldErrors {
@@ -49,6 +52,7 @@ interface FieldErrors {
   city?: string;
   linkedinUrl?: string;
   source?: string;
+  stage?: string;
 }
 
 export default function EditLearnerDialog({
@@ -60,6 +64,7 @@ export default function EditLearnerDialog({
   const { enqueueSnackbar } = useSnackbar();
   const { patchLearner } = usePeople({});
   const { settings } = useSettings();
+  const { accessToken } = useAuth();
   const firstNameRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<FormData>({
@@ -70,6 +75,7 @@ export default function EditLearnerDialog({
     city: "",
     linkedinUrl: "",
     source: "",
+    stage: "",
   });
 
   const [initialData, setInitialData] = useState<FormData>({
@@ -80,6 +86,7 @@ export default function EditLearnerDialog({
     city: "",
     linkedinUrl: "",
     source: "",
+    stage: "",
   });
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -103,6 +110,7 @@ export default function EditLearnerDialog({
         city: learner.city || "",
         linkedinUrl: learner.linkedinUrl || "",
         source: learner.source || "",
+        stage: learner.stage || "",
       };
       setFormData(data);
       setInitialData(data);
@@ -168,23 +176,33 @@ export default function EditLearnerDialog({
   const getChangedFields = (): PatchPersonRequest => {
     const changes: PatchPersonRequest = {};
 
-    Object.keys(formData).forEach((key) => {
-      const field = key as keyof FormData;
-      const currentValue = formData[field];
-      const initialValue = initialData[field];
+    (Object.keys(formData) as (keyof FormData)[]).forEach((field) => {
+      const currentValue = (formData[field] ?? "") as string;
+      const initialValue = (initialData[field] ?? "") as string;
 
       // Only include changed fields
       if (currentValue !== initialValue) {
         if (currentValue.trim() === "") {
-          changes[field] = undefined;
+          (changes as Record<string, unknown>)[field as string] = undefined;
         } else {
-          changes[field] = currentValue.trim();
+          (changes as Record<string, unknown>)[field as string] =
+            currentValue.trim();
         }
       }
     });
 
     return changes;
   };
+
+  // When status changes elsewhere and stage becomes invalid, caller should pass updated learner; here we just ensure selected stage is valid for status when opening
+  useEffect(() => {
+    if (open && learner?.status && formData.stage) {
+      const validStages = settings.data?.stagesByStatus?.[learner.status] || [];
+      if (validStages.length > 0 && !validStages.includes(formData.stage)) {
+        setFormData((prev) => ({ ...prev, stage: "" }));
+      }
+    }
+  }, [open, learner?.status, formData.stage, settings.data?.stagesByStatus]);
 
   const handleSubmit = async () => {
     if (!learner) return;
@@ -193,9 +211,8 @@ export default function EditLearnerDialog({
     const errors: FieldErrors = {};
     let firstInvalidField: keyof FormData | null = null;
 
-    Object.keys(formData).forEach((key) => {
-      const field = key as keyof FormData;
-      const error = validateField(field, formData[field]);
+    (Object.keys(formData) as (keyof FormData)[]).forEach((field) => {
+      const error = validateField(field, (formData[field] ?? "") as string);
       if (error) {
         errors[field] = error;
         if (!firstInvalidField) firstInvalidField = field;
@@ -212,9 +229,12 @@ export default function EditLearnerDialog({
     }
 
     const changes = getChangedFields();
+    const stageChanged = (formData.stage ?? "") !== (initialData.stage ?? "");
+    const stageValue = formData.stage ?? "";
+    delete (changes as Record<string, unknown>)["stage"];
 
     // If no changes, just close
-    if (Object.keys(changes).length === 0) {
+    if (Object.keys(changes).length === 0 && !stageChanged) {
       onClose();
       return;
     }
@@ -223,7 +243,18 @@ export default function EditLearnerDialog({
     setFieldErrors({});
 
     try {
-      await patchLearner.mutateAsync({ id: learner.id, payload: changes });
+      // If other fields changed, patch them first
+      if (Object.keys(changes).length > 0) {
+        await patchLearner.mutateAsync({ id: learner.id, payload: changes });
+      }
+      // If stage changed, patch stage via dedicated endpoint
+      if (stageChanged) {
+        await fetchJson(`/api/v1/learners/${learner.id}/stage`, {
+          method: "PATCH",
+          body: { stage: stageValue },
+          token: accessToken || undefined,
+        });
+      }
 
       enqueueSnackbar("Learner updated successfully", { variant: "success" });
       onClose();
@@ -232,14 +263,19 @@ export default function EditLearnerDialog({
       const errorObj = error as {
         message?: string;
         details?: Record<string, string>;
+        code?: string;
       };
 
       if (errorObj.details) {
-        // Field-specific errors from backend
         setFieldErrors(errorObj.details as FieldErrors);
         enqueueSnackbar("Please fix the errors below", { variant: "error" });
       } else {
-        // General error
+        if (errorObj.code === "INVALID_PHONE") {
+          setFieldErrors((prev) => ({
+            ...prev,
+            phone: "Please enter a valid phone number",
+          }));
+        }
         enqueueSnackbar(errorObj.message || "Failed to update learner", {
           variant: "error",
           action: (
@@ -362,6 +398,37 @@ export default function EditLearnerDialog({
                 {fieldErrors.source}
               </Box>
             )}
+          </FormControl>
+          {/* Stage (status-aware) */}
+          <FormControl
+            fullWidth
+            disabled={
+              isSubmitting ||
+              !(
+                learner?.status &&
+                settings.data?.stagesByStatus?.[learner.status]?.length
+              )
+            }
+          >
+            <InputLabel>Stage</InputLabel>
+            <Select
+              value={formData.stage || ""}
+              onChange={handleChange("stage")}
+              label="Stage"
+            >
+              {learner?.status &&
+              settings.data?.stagesByStatus?.[learner.status]
+                ? settings.data.stagesByStatus[learner.status].map((stage) => (
+                    <MenuItem key={stage} value={stage}>
+                      {stage}
+                    </MenuItem>
+                  ))
+                : [
+                    <MenuItem key="_none" value="">
+                      <em>No stages</em>
+                    </MenuItem>,
+                  ]}
+            </Select>
           </FormControl>
         </Box>
       </DialogContent>

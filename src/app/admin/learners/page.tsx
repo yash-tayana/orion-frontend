@@ -47,6 +47,7 @@ export default function LearnersPage(): React.ReactElement {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [setStageOpen, setSetStageOpen] = useState(false);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -64,7 +65,7 @@ export default function LearnersPage(): React.ReactElement {
     if (qParam) setQ(qParam);
   }, [searchParams]);
 
-  // URL synchronization
+  // URL synchronization without navigation (no re-mount)
   const updateURL = useCallback(
     (newParams: {
       status?: string;
@@ -72,20 +73,17 @@ export default function LearnersPage(): React.ReactElement {
       source?: string;
       q?: string;
     }) => {
-      const params = new URLSearchParams(searchParams.toString());
-
+      const url = new URL(window.location.href);
       Object.entries(newParams).forEach(([key, value]) => {
         if (value) {
-          params.set(key, value);
+          url.searchParams.set(key, value);
         } else {
-          params.delete(key);
+          url.searchParams.delete(key);
         }
       });
-
-      const newURL = `${window.location.pathname}?${params.toString()}`;
-      router.replace(newURL);
+      window.history.replaceState(null, "", url.toString());
     },
-    [searchParams, router]
+    []
   );
 
   const clearAllFilters = useCallback(() => {
@@ -265,6 +263,13 @@ export default function LearnersPage(): React.ReactElement {
                       onClick: () => {
                         setSelectedPerson(params.row);
                         setOpenEdit(true);
+                      },
+                    },
+                    {
+                      label: "Set Stage",
+                      onClick: () => {
+                        setSelectedPerson(params.row);
+                        setSetStageOpen(true);
                       },
                     },
                     {
@@ -575,14 +580,24 @@ export default function LearnersPage(): React.ReactElement {
       />
 
       {selectedPerson && (
-        <EditLearnerDialog
-          open={openEdit}
-          onClose={() => {
-            setOpenEdit(false);
-            setSelectedPerson(null);
-          }}
-          learner={selectedPerson}
-        />
+        <>
+          <EditLearnerDialog
+            open={openEdit}
+            onClose={() => {
+              setOpenEdit(false);
+              setSelectedPerson(null);
+            }}
+            learner={selectedPerson}
+          />
+          <EditLearnerDialog
+            open={setStageOpen}
+            onClose={() => {
+              setSetStageOpen(false);
+              setSelectedPerson(null);
+            }}
+            learner={selectedPerson}
+          />
+        </>
       )}
     </>
   );

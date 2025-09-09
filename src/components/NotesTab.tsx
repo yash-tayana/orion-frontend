@@ -92,21 +92,7 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
-  const getAbsoluteUrl = (url: string): string => {
-    if (url.startsWith("http")) {
-      return url;
-    }
-
-    // Log warning for relative URLs in development
-    if (process.env.NODE_ENV === "development") {
-      console.warn("NotesTab: Relative attachment URL detected:", url);
-    }
-
-    // Safety fallback: prefix with API base URL
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "";
-    return `${baseUrl}/${url.replace(/^\/+/, "")}`;
-  };
+  const getAbsoluteUrl = (url: string): string => url;
 
   const renderAttachment = (attachment: unknown) => {
     const att = attachment as Record<string, unknown>;

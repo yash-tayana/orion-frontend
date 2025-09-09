@@ -30,15 +30,11 @@ export default function AppSidebar({
   const { data: me } = useMe();
 
   const items = [
-    ...(isAdmin(me?.role)
-      ? [
-          {
-            href: "/admin/dashboard",
-            label: "Dashboard",
-            icon: <DashboardIcon />,
-          },
-        ]
-      : []),
+    {
+      href: "/admin/dashboard",
+      label: "Dashboard",
+      icon: <DashboardIcon />,
+    },
     { href: "/admin/learners", label: "Learners", icon: <PeopleAltIcon /> },
     { href: "/admin/roster", label: "Roster", icon: <AssignmentIcon /> },
     ...(isAdmin(me?.role)
