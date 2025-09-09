@@ -6,7 +6,8 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package.json package-lock.json* ./
-RUN npm install --frozen-lockfile
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy rest of the project and build
 COPY . .
@@ -26,4 +27,6 @@ COPY --from=builder /app/public ./public
 EXPOSE 3000
 
 # Run Next.js in production mode
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 CMD ["npm", "run", "start"]

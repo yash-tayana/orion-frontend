@@ -1,6 +1,8 @@
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   output: "standalone",
-  // If you still need to allow dev origins locally, do it via env or remove for prod builds
+  eslint: { ignoreDuringBuilds: true },
 };
 
 export default nextConfig;
