@@ -23,7 +23,7 @@ import { useSnackbar } from "notistack";
 import { usePeople, type Person } from "@/api/hooks/usePeople";
 import { useMe } from "@/api/hooks/useMe";
 import { useSettings } from "@/api/hooks/useSettings";
-import { isAdmin } from "@/utils/rbac";
+import { isAdmin, isSales } from "@/utils/rbac";
 import PageHeader from "@/components/PageHeader";
 import SearchInput from "@/components/SearchInput";
 import SegmentedControl from "@/components/SegmentedControl";
@@ -134,6 +134,17 @@ export default function LearnersPage(): React.ReactElement {
         "People rows preview:",
         list.data.slice(0, 3).map((r) => ({ id: r.id, owner: r.owner }))
       );
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.debug(
+          "RBAC preview:",
+          list.data.slice(0, 3).map((r) => ({
+            id: r.id,
+            owner: r.owner?.email,
+            ownerId: r.ownerUserId,
+          }))
+        );
+      }
     }
   }, [list.data]);
 
@@ -310,7 +321,11 @@ export default function LearnersPage(): React.ReactElement {
                 params?.row && router.push(`/admin/learners/${params.row.id}`),
             },
           ];
-          if (params?.row && params.row.ownerUserId !== me?.id) {
+          if (
+            params?.row &&
+            params.row.ownerUserId == null &&
+            (isSales(me?.role) || isAdmin(me?.role))
+          ) {
             items.push({
               label: "Assign to me",
               onClick: async () => {

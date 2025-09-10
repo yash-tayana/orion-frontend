@@ -11,6 +11,7 @@ export type UserProfile = {
     | "SUPER_ADMIN"
     | "USER"
     | "COUNSELOR"
+    | "SALES"
     | "MARKETER"
     | "TRAINING_ADMIN";
   firstLoginAt?: string | null;

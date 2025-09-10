@@ -4,7 +4,7 @@ import { useMe } from "@/api/hooks/useMe";
 import { useSettings } from "@/api/hooks/useSettings";
 import CounselorDialog from "@/components/CounselorDialog";
 import CounselorsTable from "@/components/CounselorsTable";
-import { isAdmin } from "@/utils/rbac";
+import { isAdmin, isSuper, isSales } from "@/utils/rbac";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -113,8 +113,8 @@ export default function SettingsPage(): ReactElement {
           </Paper>
         </motion.div>
 
-        {/* Stages tile - Admin only */}
-        {isAdmin(me?.role) && (
+        {/* Stages tile - Admin+ visible, Sales read-only */}
+        {(isAdmin(me?.role) || isSales(me?.role)) && (
           <motion.div
             whileHover={{ y: -2 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -133,7 +133,9 @@ export default function SettingsPage(): ReactElement {
                 <Typography variant="h6">Stages</Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary" mt={0.5}>
-                Manage micro-stages for each status
+                {isAdmin(me?.role)
+                  ? "Manage micro-stages for each status"
+                  : "View micro-stages (read-only)"}
               </Typography>
             </Paper>
           </motion.div>
@@ -181,6 +183,7 @@ export default function SettingsPage(): ReactElement {
               value={newSource}
               onChange={(e) => setNewSource(e.target.value)}
               fullWidth
+              disabled={!(isAdmin(me?.role) || isSuper(me?.role))}
             />
             <Button
               onClick={() => {
@@ -189,7 +192,9 @@ export default function SettingsPage(): ReactElement {
                 setSources((s) => Array.from(new Set([...s, trimmedSource])));
                 setNewSource("");
               }}
-              disabled={!newSource.trim()}
+              disabled={
+                !(isAdmin(me?.role) || isSuper(me?.role)) || !newSource.trim()
+              }
             >
               Add
             </Button>
@@ -199,8 +204,10 @@ export default function SettingsPage(): ReactElement {
               <Chip
                 key={s}
                 label={s}
-                onDelete={() =>
-                  setSources((curr) => curr.filter((x) => x !== s))
+                onDelete={
+                  isAdmin(me?.role) || isSuper(me?.role)
+                    ? () => setSources((curr) => curr.filter((x) => x !== s))
+                    : undefined
                 }
               />
             ))}
@@ -214,6 +221,7 @@ export default function SettingsPage(): ReactElement {
               await onSave();
               setOpenSources(false);
             }}
+            disabled={!(isAdmin(me?.role) || isSuper(me?.role))}
           >
             Save
           </Button>

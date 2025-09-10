@@ -23,6 +23,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useSnackbar } from "notistack";
 import { useStages } from "@/api/hooks/useStages";
 import { useSettings } from "@/api/hooks/useSettings";
+import { useMe } from "@/api/hooks/useMe";
+import { isAdmin } from "@/utils/rbac";
 
 const STATUS_LABELS = {
   SUSPECT: "Suspect",
@@ -53,6 +55,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
   const { updateStages } = useStages();
   const { settings } = useSettings();
+  const { data: me } = useMe();
   const [stages, setStages] = useState<{ [status: string]: string[] }>({});
   const [newStageNames, setNewStageNames] = useState<{
     [status: string]: string;
@@ -77,6 +80,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
   }, [open, settings.data]);
 
   const handleAddStage = (status: string) => {
+    if (!isAdmin(me?.role)) return;
     const stageName = newStageNames[status]?.trim();
     if (!stageName) return;
 
@@ -92,6 +96,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
   };
 
   const handleRemoveStage = (status: string, stageName: string) => {
+    if (!isAdmin(me?.role)) return;
     setStages((prev) => ({
       ...prev,
       [status]: (prev[status] || []).filter((stage) => stage !== stageName),
@@ -100,6 +105,10 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
 
   const handleSave = async () => {
     try {
+      if (!isAdmin(me?.role)) {
+        onClose();
+        return;
+      }
       // Transform to backend contract
       const payload = {
         stagesByStatus: stages,
@@ -147,7 +156,11 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
                       <Chip
                         key={stageName}
                         label={stageName}
-                        onDelete={() => handleRemoveStage(status, stageName)}
+                        onDelete={
+                          isAdmin(me?.role)
+                            ? () => handleRemoveStage(status, stageName)
+                            : undefined
+                        }
                         deleteIcon={<DeleteIcon />}
                         color="primary"
                         variant="outlined"
@@ -173,10 +186,13 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
                         }
                       }}
                       sx={{ flex: 1 }}
+                      disabled={!isAdmin(me?.role)}
                     />
                     <IconButton
                       onClick={() => handleAddStage(status)}
-                      disabled={!newStageNames[status]?.trim()}
+                      disabled={
+                        !isAdmin(me?.role) || !newStageNames[status]?.trim()
+                      }
                       color="primary"
                     >
                       <AddIcon />

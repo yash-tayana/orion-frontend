@@ -18,6 +18,7 @@ export function useMetricsLeadOwners(params: {
   end?: string;
   granularity?: "day" | "week";
   tz?: string;
+  ownerUserId?: string;
 }) {
   const { accessToken } = useAuth();
 
@@ -30,6 +31,7 @@ export function useMetricsLeadOwners(params: {
       if (params.end) sp.set("end", params.end);
       sp.set("granularity", params.granularity || "day");
       if (params.tz) sp.set("tz", params.tz);
+      if (params.ownerUserId) sp.set("ownerUserId", params.ownerUserId);
       const url = `/api/v1/metrics/lead-owners?${sp.toString()}`;
       return fetchJson<LeadOwnerSeriesResponse>(url, {
         token: accessToken || undefined,

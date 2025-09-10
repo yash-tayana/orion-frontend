@@ -30,6 +30,7 @@ import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import { useMetricsLeadOwners } from "@/api/hooks/useMetricsLeadOwners";
+import { isSales } from "@/utils/rbac";
 import type { ReactElement } from "react";
 
 export default function DashboardPage(): ReactElement {
@@ -55,6 +56,7 @@ export default function DashboardPage(): ReactElement {
     end,
     granularity: "day",
     tz,
+    ownerUserId: isSales(me?.role) ? me?.id : undefined,
   });
 
   // Allow universal view access: no redirect for non-admins

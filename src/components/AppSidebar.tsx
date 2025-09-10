@@ -14,9 +14,10 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import GroupIcon from "@mui/icons-material/Group";
 
 import Image from "next/image";
-import { isAdmin } from "@/utils/rbac";
+import { isAdmin, isSuper } from "@/utils/rbac";
 import { useMe } from "@/api/hooks/useMe";
 
 export default function AppSidebar({
@@ -37,8 +38,9 @@ export default function AppSidebar({
     },
     { href: "/admin/learners", label: "Learners", icon: <PeopleAltIcon /> },
     { href: "/admin/calendar", label: "Calendar", icon: <AssignmentIcon /> },
-    ...(isAdmin(me?.role)
-      ? [{ href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> }]
+    { href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> },
+    ...(isSuper(me?.role)
+      ? [{ href: "/admin/users", label: "Users", icon: <GroupIcon /> }]
       : []),
     { href: "/admin/profile", label: "Profile", icon: <AccountCircleIcon /> },
   ];
