@@ -11,7 +11,7 @@ import { useTransitions } from "@/api/hooks/useTransitions";
 import StatusChip from "@/components/StatusChip";
 import Button from "@mui/material/Button";
 import { useMe } from "@/api/hooks/useMe";
-import { isAdmin, canViewNotes } from "@/utils/rbac";
+import { isAdmin, isSales, canViewNotes, canEditLearner } from "@/utils/rbac";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -46,11 +46,19 @@ export default function LearnerPanel(): ReactElement {
   const [tab, setTab] = useState(0);
   const [stageUpdating, setStageUpdating] = useState(false);
 
-  const canPromote = useMemo(
-    () =>
-      isAdmin(me?.role) && data && ["SUSPECT", "LEAD"].includes(data.status),
-    [me?.role, data]
+  const ownerId = useMemo(
+    () => (data ? data.ownerUserId ?? data.owner?.id ?? null : null),
+    [data]
   );
+
+  const canPromote = useMemo(() => {
+    if (!data) return false;
+    return (
+      (isAdmin(me?.role) || isSales(me?.role)) &&
+      ["SUSPECT", "LEAD"].includes(data.status) &&
+      canEditLearner(me?.role, me?.id, ownerId)
+    );
+  }, [me?.role, me?.id, data, ownerId]);
 
   const handleStageChange = async (newStage: string) => {
     if (!data || stageUpdating) return;
@@ -153,7 +161,7 @@ export default function LearnerPanel(): ReactElement {
                   Promote
                 </Button>
               )}
-              {isAdmin(me?.role) && (
+              {canEditLearner(me?.role, me?.id, ownerId) && (
                 <Button
                   size="small"
                   variant="outlined"
@@ -239,7 +247,7 @@ export default function LearnerPanel(): ReactElement {
                   {data.source || "Unknown"}
                 </Box>
               </Box>
-              {isAdmin(me?.role) && (
+              {canEditLearner(me?.role, me?.id, ownerId) && (
                 <Box>
                   <Box
                     fontWeight={600}
@@ -300,7 +308,7 @@ export default function LearnerPanel(): ReactElement {
             />
           )}
           {canViewNotes(me?.role) && tab === 2 && (
-            <NotesTab learnerId={data.id} />
+            <NotesTab learnerId={data.id} ownerUserId={ownerId} />
           )}
           {tab === (canViewNotes(me?.role) ? 3 : 2) && (
             <Box display="flex" flexDirection="column" gap={1}>

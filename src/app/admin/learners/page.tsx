@@ -23,7 +23,12 @@ import { useSnackbar } from "notistack";
 import { usePeople, type Person } from "@/api/hooks/usePeople";
 import { useMe } from "@/api/hooks/useMe";
 import { useSettings } from "@/api/hooks/useSettings";
-import { isAdmin, isSales } from "@/utils/rbac";
+import {
+  isAdmin,
+  isSales,
+  canCreateLearner,
+  canEditLearner,
+} from "@/utils/rbac";
 import PageHeader from "@/components/PageHeader";
 import SearchInput from "@/components/SearchInput";
 import SegmentedControl from "@/components/SegmentedControl";
@@ -346,13 +351,23 @@ export default function LearnersPage(): React.ReactElement {
               },
             });
           }
-          if (isAdmin(me?.role)) {
+          if (
+            params?.row &&
+            canEditLearner(me?.role, me?.id, params.row.ownerUserId ?? null)
+          ) {
             items.push(
               {
                 label: "Edit",
                 onClick: () => {
                   if (params?.row) setSelectedPerson(params.row);
                   setOpenEdit(true);
+                },
+              },
+              {
+                label: "Update Status",
+                onClick: () => {
+                  if (params?.row) setSelectedPerson(params.row);
+                  setSetStageOpen(true);
                 },
               },
               {
@@ -384,7 +399,7 @@ export default function LearnersPage(): React.ReactElement {
         title="Learners"
         description="Manage suspects, leads and candidate-free cohorts."
         actions={
-          isAdmin(me?.role) ? (
+          canCreateLearner(me?.role) ? (
             <Button variant="contained" onClick={() => setOpenCreate(true)}>
               New Learner
             </Button>

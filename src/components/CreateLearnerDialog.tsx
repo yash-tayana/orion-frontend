@@ -19,6 +19,8 @@ import { useSnackbar } from "notistack";
 import { usePeople, type CreatePersonRequest } from "@/api/hooks/usePeople";
 import { useSettings } from "@/api/hooks/useSettings";
 import type { ReactElement } from "react";
+import { useMe } from "@/api/hooks/useMe";
+import { canCreateLearner } from "@/utils/rbac";
 
 interface CreateLearnerDialogProps {
   open: boolean;
@@ -50,8 +52,9 @@ export default function CreateLearnerDialog({
   open,
   onClose,
   onSuccess,
-}: CreateLearnerDialogProps): ReactElement {
+}: CreateLearnerDialogProps): ReactElement | null {
   const { enqueueSnackbar } = useSnackbar();
+  const { data: me } = useMe();
   const { createLearner } = usePeople({});
   const { settings } = useSettings();
   const firstNameRef = useRef<HTMLInputElement>(null);
@@ -228,6 +231,8 @@ export default function CreateLearnerDialog({
       onClose();
     }
   };
+
+  if (!canCreateLearner(me?.role)) return null;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>

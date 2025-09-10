@@ -25,6 +25,8 @@ import {
 } from "@/api/hooks/usePeople";
 import { useSettings } from "@/api/hooks/useSettings";
 import type { ReactElement } from "react";
+import { useMe } from "@/api/hooks/useMe";
+import { canEditLearner } from "@/utils/rbac";
 
 interface EditLearnerDialogProps {
   open: boolean;
@@ -61,6 +63,7 @@ export default function EditLearnerDialog({
   onSuccess,
   learner,
 }: EditLearnerDialogProps): ReactElement {
+  const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
   const { patchLearner } = usePeople({});
   const { settings } = useSettings();
@@ -296,6 +299,12 @@ export default function EditLearnerDialog({
     }
   };
 
+  const enabled = canEditLearner(
+    me?.role,
+    me?.id,
+    learner?.ownerUserId ?? learner?.owner?.id ?? null
+  );
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>Edit Learner</DialogTitle>
@@ -310,7 +319,7 @@ export default function EditLearnerDialog({
             helperText={fieldErrors.firstName}
             required
             fullWidth
-            disabled={isSubmitting}
+            disabled={!enabled || isSubmitting}
           />
 
           <TextField
@@ -320,7 +329,7 @@ export default function EditLearnerDialog({
             error={!!fieldErrors.lastName}
             helperText={fieldErrors.lastName}
             fullWidth
-            disabled={isSubmitting}
+            disabled={!enabled || isSubmitting}
           />
 
           <TextField
@@ -332,7 +341,7 @@ export default function EditLearnerDialog({
             helperText={fieldErrors.email || "Work or personal email"}
             required
             fullWidth
-            disabled={isSubmitting}
+            disabled={!enabled || isSubmitting}
           />
 
           <TextField
@@ -344,7 +353,7 @@ export default function EditLearnerDialog({
               fieldErrors.phone || "Optional - digits, spaces, +, -, (, )"
             }
             fullWidth
-            disabled={isSubmitting}
+            disabled={!enabled || isSubmitting}
           />
 
           <TextField
@@ -354,7 +363,7 @@ export default function EditLearnerDialog({
             error={!!fieldErrors.city}
             helperText={fieldErrors.city || "Optional - max 120 characters"}
             fullWidth
-            disabled={isSubmitting}
+            disabled={!enabled || isSubmitting}
           />
 
           <TextField
@@ -369,7 +378,7 @@ export default function EditLearnerDialog({
             disabled={isSubmitting}
           />
 
-          <FormControl fullWidth disabled={isSubmitting}>
+          <FormControl fullWidth disabled={!enabled || isSubmitting}>
             <InputLabel>Source</InputLabel>
             <Select
               value={formData.source}
@@ -403,6 +412,7 @@ export default function EditLearnerDialog({
           <FormControl
             fullWidth
             disabled={
+              !enabled ||
               isSubmitting ||
               !(
                 learner?.status &&
@@ -439,7 +449,7 @@ export default function EditLearnerDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isSubmitting}
+          disabled={!enabled || isSubmitting}
           startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
         >
           {isSubmitting ? "Updating..." : "Update Learner"}

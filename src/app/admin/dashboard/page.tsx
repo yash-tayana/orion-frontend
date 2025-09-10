@@ -59,6 +59,47 @@ export default function DashboardPage(): ReactElement {
     ownerUserId: isSales(me?.role) ? me?.id : undefined,
   });
 
+  // Dev-only guard: for SALES, ensure series rows are scoped to the signed-in user
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      isSales(me?.role) &&
+      series.data?.series &&
+      series.data.series.length > 0
+    ) {
+      const hasMismatch = series.data.series.some((row: unknown) => {
+        const ownerAny = (row as any)?.owner;
+        if (!ownerAny) return false;
+        // If string, compare against email/displayName; if object (future), compare id
+        if (typeof ownerAny === "string") {
+          if (
+            ownerAny !== "Unassigned" &&
+            ownerAny !== (me?.email || "") &&
+            ownerAny !== (me?.displayName || "")
+          ) {
+            return true;
+          }
+          return false;
+        }
+        if (typeof ownerAny === "object" && ownerAny) {
+          const ownerId = (ownerAny as any).id;
+          return ownerId && me?.id && ownerId !== me.id;
+        }
+        return false;
+      });
+      if (hasMismatch) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "SALES scope regression: learner-owner series contains non-self owners",
+          {
+            me,
+            series: series.data,
+          }
+        );
+      }
+    }
+  }, [series.data, me?.role, me?.id, me?.email, me?.displayName]);
+
   // Allow universal view access: no redirect for non-admins
 
   // Handle errors

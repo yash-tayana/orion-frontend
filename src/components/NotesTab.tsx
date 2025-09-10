@@ -22,7 +22,7 @@ import { useSnackbar } from "notistack";
 import { formatDistanceToNow } from "date-fns";
 import { useLearnerNotes, type LearnerNote } from "@/api/hooks/useLearnerNotes";
 import { useMe } from "@/api/hooks/useMe";
-import { canViewNotes, canDeleteNote } from "@/utils/rbac";
+import { canViewNotes, canDeleteNote, canAddNotes } from "@/utils/rbac";
 import EmptyState from "@/components/EmptyState";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type { ReactElement } from "react";
@@ -30,9 +30,13 @@ import { ApiError } from "@/api/errors";
 
 interface NotesTabProps {
   learnerId: string;
+  ownerUserId?: string | null;
 }
 
-export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
+export default function NotesTab({
+  learnerId,
+  ownerUserId,
+}: NotesTabProps): ReactElement {
   const { enqueueSnackbar } = useSnackbar();
   const { data: me } = useMe();
   const { notes, create, delete: deleteNote } = useLearnerNotes(learnerId);
@@ -53,9 +57,15 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
       setFiles([]);
       enqueueSnackbar("Note added", { variant: "success" });
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to add note";
-      enqueueSnackbar(errorMessage, { variant: "error" });
+      if (error instanceof ApiError && error.status === 403) {
+        enqueueSnackbar("You can only add notes to learners you own.", {
+          variant: "info",
+        });
+      } else {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to add note";
+        enqueueSnackbar(errorMessage, { variant: "error" });
+      }
     }
   };
 
@@ -230,6 +240,11 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
     );
   }
 
+  // We need the learner's ownerUserId to compute canWrite; notes API does not include learner details,
+  // so when used inside learner drawer, pass it via props in parent or rely on context. For now, fetch is omitted;
+  // compute conservatively as false unless author is me.
+  const canWrite = canAddNotes(me?.role, me?.id, ownerUserId ?? null);
+
   return (
     <Box height={600} display="flex" flexDirection="column" gap={2}>
       {/* Add Note Form */}
@@ -243,6 +258,7 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
             onChange={(e) => setNewNote(e.target.value)}
             fullWidth
             required
+            disabled={!canWrite}
           />
 
           <Box>
@@ -259,6 +275,7 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
                 startIcon={<AttachFileIcon />}
                 variant="outlined"
                 size="small"
+                disabled={!canWrite}
               >
                 Attach Files
               </Button>
@@ -283,10 +300,15 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={!newNote.trim() || create.isPending}
+            disabled={!canWrite || !newNote.trim() || create.isPending}
           >
             {create.isPending ? "Adding..." : "Add Note"}
           </Button>
+          {!canWrite && (
+            <Typography variant="caption" color="text.secondary">
+              Read-only for your role. You can add notes for learners you own.
+            </Typography>
+          )}
         </Stack>
       </Paper>
 
@@ -324,7 +346,11 @@ export default function NotesTab({ learnerId }: NotesTabProps): ReactElement {
                         </Typography>
                       </Tooltip>
                     </Box>
-                    {canDeleteNote(me?.role, note.author.id === me?.id) && (
+                    {canDeleteNote(
+                      me?.role,
+                      me?.id || undefined,
+                      note.author.id
+                    ) && (
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteClick(note)}
