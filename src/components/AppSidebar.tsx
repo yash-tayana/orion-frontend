@@ -9,9 +9,9 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import AssignmentIcon from "@mui/icons-material/Assignment";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import DateRangeIcon from "@mui/icons-material/DateRange";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import GroupIcon from "@mui/icons-material/Group";
@@ -34,10 +34,10 @@ export default function AppSidebar({
     {
       href: "/admin/dashboard",
       label: "Dashboard",
-      icon: <DashboardIcon />,
+      icon: <AnalyticsIcon />,
     },
-    { href: "/admin/learners", label: "Learners", icon: <PeopleAltIcon /> },
-    { href: "/admin/calendar", label: "Calendar", icon: <AssignmentIcon /> },
+    { href: "/admin/learners", label: "Learners", icon: <LocalLibraryIcon /> },
+    { href: "/admin/calendar", label: "Calendar", icon: <DateRangeIcon /> },
     { href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> },
     ...(isSuper(me?.role)
       ? [{ href: "/admin/users", label: "Users", icon: <GroupIcon /> }]

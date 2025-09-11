@@ -24,7 +24,7 @@ import { useSnackbar } from "notistack";
 import { useStages } from "@/api/hooks/useStages";
 import { useSettings } from "@/api/hooks/useSettings";
 import { useMe } from "@/api/hooks/useMe";
-import { isAdmin } from "@/utils/rbac";
+import { canWriteStages } from "@/utils/rbac";
 
 const STATUS_LABELS = {
   SUSPECT: "Suspect",
@@ -80,7 +80,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
   }, [open, settings.data]);
 
   const handleAddStage = (status: string) => {
-    if (!isAdmin(me?.role)) return;
+    if (!canWriteStages(me?.role)) return;
     const stageName = newStageNames[status]?.trim();
     if (!stageName) return;
 
@@ -96,7 +96,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
   };
 
   const handleRemoveStage = (status: string, stageName: string) => {
-    if (!isAdmin(me?.role)) return;
+    if (!canWriteStages(me?.role)) return;
     setStages((prev) => ({
       ...prev,
       [status]: (prev[status] || []).filter((stage) => stage !== stageName),
@@ -105,7 +105,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
 
   const handleSave = async () => {
     try {
-      if (!isAdmin(me?.role)) {
+      if (!canWriteStages(me?.role)) {
         onClose();
         return;
       }
@@ -121,17 +121,11 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
       enqueueSnackbar("Stages saved successfully", { variant: "success" });
       onClose();
     } catch (error: unknown) {
-      let errorMessage = "Failed to save stages";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        // Check for 400 error (shape mismatch)
-        if (error.message.includes("400") || error.message.includes("shape")) {
-          errorMessage =
-            "Stages must be arrays of strings per status. Please remove IDs/orders and try again.";
-        }
-      }
-
+      const err = error as { message?: string; code?: string };
+      const errorMessage =
+        err?.code === "RBAC_DENIED"
+          ? "Read-only for your role."
+          : err?.message || "Failed to save stages";
       enqueueSnackbar(errorMessage, { variant: "error" });
     }
   };
@@ -157,7 +151,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
                         key={stageName}
                         label={stageName}
                         onDelete={
-                          isAdmin(me?.role)
+                          canWriteStages(me?.role)
                             ? () => handleRemoveStage(status, stageName)
                             : undefined
                         }
@@ -186,12 +180,13 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
                         }
                       }}
                       sx={{ flex: 1 }}
-                      disabled={!isAdmin(me?.role)}
+                      disabled={!canWriteStages(me?.role)}
                     />
                     <IconButton
                       onClick={() => handleAddStage(status)}
                       disabled={
-                        !isAdmin(me?.role) || !newStageNames[status]?.trim()
+                        !canWriteStages(me?.role) ||
+                        !newStageNames[status]?.trim()
                       }
                       color="primary"
                     >
@@ -209,7 +204,7 @@ export default function StagesDialog({ open, onClose }: StagesDialogProps) {
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={updateStages.isPending}
+          disabled={updateStages.isPending || !canWriteStages(me?.role)}
         >
           {updateStages.isPending ? "Saving..." : "Save"}
         </Button>

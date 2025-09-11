@@ -44,6 +44,11 @@ export const canSeeAllLearners = (role?: string | null): boolean =>
 export const canManageUsers = (role?: string | null): boolean => isSuper(role);
 export const canCreateLearner = (role?: string | null): boolean =>
   isSales(role) || isAdmin(role) || isSuper(role);
+
+// Settings write permissions
+export const canWriteStages = (role?: string | null): boolean =>
+  role === "ADMIN" || role === "SUPER_ADMIN" || role === "SALES";
+export const canWriteSources = canWriteStages;
 export const canAddNotes = (
   role?: string | null,
   meId?: string | null,

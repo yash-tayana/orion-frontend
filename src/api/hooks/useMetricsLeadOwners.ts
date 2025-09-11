@@ -2,15 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/api/client";
 import { useAuth } from "@/auth/useAuth";
 
-export type LeadOwnerSeriesRow = { date: string; owner: string; count: number };
-
-export type LeadOwnerSeriesResponse = {
-  status: string;
-  granularity: "day" | "week";
-  start: string;
-  end: string;
-  series: LeadOwnerSeriesRow[];
+export type LeadOwnerSeriesRow = {
+  date: string;
+  ownerId: string | null;
+  ownerDisplayName: string | null;
+  count: number;
 };
+
+export type LeadOwnerSeriesResponse = LeadOwnerSeriesRow[];
 
 export function useMetricsLeadOwners(params: {
   status?: string;

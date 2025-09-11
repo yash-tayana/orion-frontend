@@ -2,9 +2,16 @@
 
 import { useMe } from "@/api/hooks/useMe";
 import { useSettings } from "@/api/hooks/useSettings";
+import { useUpdateSources } from "@/api/hooks/useSources";
 import CounselorDialog from "@/components/CounselorDialog";
 import CounselorsTable from "@/components/CounselorsTable";
-import { isAdmin, isSuper, isSales } from "@/utils/rbac";
+import {
+  isAdmin,
+  isSuper,
+  isSales,
+  canWriteStages,
+  canWriteSources,
+} from "@/utils/rbac";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -31,6 +38,7 @@ import type { ReactElement } from "react";
 
 export default function SettingsPage(): ReactElement {
   const { settings, update } = useSettings();
+  const { updateSources } = useUpdateSources();
   const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
   const [sources, setSources] = useState<string[]>([]);
@@ -63,15 +71,18 @@ export default function SettingsPage(): ReactElement {
 
       const payload = { sources: cleanSources };
 
-      await update.mutateAsync(payload as never);
+      await updateSources.mutateAsync(payload as never);
       // Re-fetch to avoid optimistic masking
       await settings.refetch();
       enqueueSnackbar("Settings saved", { variant: "success" });
     } catch (e: unknown) {
-      const err = e as { message?: string; status?: number };
-      enqueueSnackbar(err.message || "Failed to save settings", {
-        variant: "error",
-      });
+      const err = e as { message?: string; status?: number; code?: string };
+      const msg =
+        err && err.code === "RBAC_DENIED"
+          ? "Read-only for your role."
+          : err.message || "Failed to save settings";
+      enqueueSnackbar(msg, { variant: "error" });
+      await settings.refetch();
     }
   };
 
@@ -113,7 +124,7 @@ export default function SettingsPage(): ReactElement {
           </Paper>
         </motion.div>
 
-        {/* Stages tile - Admin+ visible, Sales read-only */}
+        {/* Stages tile - Admin + Sales can open */}
         {(isAdmin(me?.role) || isSales(me?.role)) && (
           <motion.div
             whileHover={{ y: -2 }}
@@ -133,9 +144,7 @@ export default function SettingsPage(): ReactElement {
                 <Typography variant="h6">Stages</Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary" mt={0.5}>
-                {isAdmin(me?.role)
-                  ? "Manage micro-stages for each status"
-                  : "View micro-stages (read-only)"}
+                Manage micro-stages for each status
               </Typography>
             </Paper>
           </motion.div>
@@ -183,7 +192,7 @@ export default function SettingsPage(): ReactElement {
               value={newSource}
               onChange={(e) => setNewSource(e.target.value)}
               fullWidth
-              disabled={!(isAdmin(me?.role) || isSuper(me?.role))}
+              disabled={!canWriteSources(me?.role)}
             />
             <Button
               onClick={() => {
@@ -192,9 +201,7 @@ export default function SettingsPage(): ReactElement {
                 setSources((s) => Array.from(new Set([...s, trimmedSource])));
                 setNewSource("");
               }}
-              disabled={
-                !(isAdmin(me?.role) || isSuper(me?.role)) || !newSource.trim()
-              }
+              disabled={!canWriteSources(me?.role) || !newSource.trim()}
             >
               Add
             </Button>
@@ -205,7 +212,7 @@ export default function SettingsPage(): ReactElement {
                 key={s}
                 label={s}
                 onDelete={
-                  isAdmin(me?.role) || isSuper(me?.role)
+                  canWriteSources(me?.role)
                     ? () => setSources((curr) => curr.filter((x) => x !== s))
                     : undefined
                 }
@@ -221,7 +228,7 @@ export default function SettingsPage(): ReactElement {
               await onSave();
               setOpenSources(false);
             }}
-            disabled={!(isAdmin(me?.role) || isSuper(me?.role))}
+            disabled={!canWriteSources(me?.role)}
           >
             Save
           </Button>
