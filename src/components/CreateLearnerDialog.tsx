@@ -21,6 +21,7 @@ import { useSettings } from "@/api/hooks/useSettings";
 import type { ReactElement } from "react";
 import { useMe } from "@/api/hooks/useMe";
 import { canCreateLearner } from "@/utils/rbac";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 interface CreateLearnerDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export default function CreateLearnerDialog({
   const { createLearner } = usePeople({});
   const { settings } = useSettings();
   const firstNameRef = useRef<HTMLInputElement>(null);
+  const copy = getCrmCopy();
 
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -190,7 +192,7 @@ export default function CreateLearnerDialog({
 
       await createLearner.mutateAsync(payload);
 
-      enqueueSnackbar("Learner created. Owner set to you.", {
+      enqueueSnackbar(`${copy.singularTitle} created. Owner set to you.`, {
         variant: "success",
       });
       onClose();
@@ -212,7 +214,7 @@ export default function CreateLearnerDialog({
             phone: "Please enter a valid phone number",
           }));
         }
-        enqueueSnackbar(errorObj.message || "Failed to create learner", {
+        enqueueSnackbar(errorObj.message || `Failed to create ${copy.singular}`, {
           variant: "error",
           action: (
             <Button color="inherit" size="small" onClick={handleSubmit}>
@@ -236,7 +238,7 @@ export default function CreateLearnerDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Create New Learner</DialogTitle>
+      <DialogTitle>{`Create New ${copy.singularTitle}`}</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} pt={1}>
           <TextField
@@ -349,7 +351,9 @@ export default function CreateLearnerDialog({
           disabled={isSubmitting}
           startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
         >
-          {isSubmitting ? "Creating..." : "Create Learner"}
+          {isSubmitting
+            ? "Creating..."
+            : `Create ${copy.singularTitle}`}
         </Button>
       </DialogActions>
     </Dialog>

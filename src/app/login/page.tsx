@@ -14,11 +14,13 @@ import BusinessIcon from "@mui/icons-material/Business";
 import SchoolIcon from "@mui/icons-material/School";
 
 import type { ReactElement } from "react";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function LoginPage(): ReactElement {
   const { isAuthenticated, signIn, inProgress, accessToken } = useAuth();
   const { instance } = useMsal();
   const router = useRouter();
+  const copy = getCrmCopy();
 
   useEffect(() => {
     // Redirect if authenticated and have access token
@@ -167,7 +169,7 @@ export default function LoginPage(): ReactElement {
               fontSize: "1.1rem",
             }}
           >
-            Sign in to access Orion Admin Console
+            Sign in to access Nebula CRM
           </Typography>
         </Paper>
 
@@ -274,7 +276,7 @@ export default function LoginPage(): ReactElement {
                       mb: 0.5,
                     }}
                   >
-                    Learner Portal
+                    {`${copy.singularTitle} Portal`}
                   </Typography>
                   <Typography
                     variant="body2"
@@ -370,7 +372,7 @@ export default function LoginPage(): ReactElement {
               fontSize: "0.75rem",
             }}
           >
-            Orion Admin Console v1.0 • Secure • Reliable • Professional
+            Nebula CRM v1.0 • Secure • Reliable • Professional
           </Typography>
         </Box>
       </Box>

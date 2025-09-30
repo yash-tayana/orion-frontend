@@ -37,6 +37,7 @@ import { isSales } from "@/utils/rbac";
 import { brightColors } from "@/utils/brightColors";
 import { PieChart } from "@mui/x-charts/PieChart";
 import type { ReactElement } from "react";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function DashboardPage(): ReactElement {
   const router = useRouter();
@@ -44,6 +45,11 @@ export default function DashboardPage(): ReactElement {
   const theme = useTheme();
   const { data: me } = useMe();
   const { data: metrics, isLoading, error, refetch } = useMetricsSummary();
+  const copy = getCrmCopy();
+  const singularSlug = useMemo(
+    () => copy.singular.replace(/\s+/g, "-"),
+    [copy.singular]
+  );
   const [ownerStatus, setOwnerStatus] = useState("LEAD");
   const tz = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -223,7 +229,7 @@ export default function DashboardPage(): ReactElement {
                   transition={{ duration: 0.2 }}
                 >
                   <StatCard
-                    title="Total Learners"
+                    title={`Total ${copy.pluralTitle}`}
                     value={totalLearners}
                     subtext="All statuses"
                     onClick={() => handleCardClick()}
@@ -282,7 +288,7 @@ export default function DashboardPage(): ReactElement {
         <Box>
           <Card sx={{ height: 320 + 3 + 2 * 120 }}>
             <CardHeader
-              title="Learner Owner"
+              title={`${copy.singularTitle} Owner`}
               action={
                 <Box display="flex" alignItems="center" gap={2} pr={2}>
                   <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -313,7 +319,7 @@ export default function DashboardPage(): ReactElement {
                   <Typography variant="body2">No data</Typography>
                 </Box>
               ) : (
-                <Table size="small" aria-label="learner-owner-daily">
+                <Table size="small" aria-label={`${singularSlug}-owner-daily`}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Date</TableCell>

@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import AppTopbar from "@/components/AppTopbar";
 import RequireAuth from "@/auth/RequireAuth";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function AdminLayout({
   children,
@@ -20,15 +21,16 @@ export default function AdminLayout({
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const copy = getCrmCopy();
 
   const title = useMemo(() => {
     if (!pathname) return "";
-    if (pathname.startsWith("/admin/learners")) return "Learners";
+    if (pathname.startsWith("/admin/learners")) return copy.pageTitle;
     if (pathname.startsWith("/admin/roster")) return "Candidate-Free Roster";
     if (pathname.startsWith("/admin/settings")) return "Settings";
     if (pathname.startsWith("/admin/profile")) return "Profile";
     return "Admin";
-  }, [pathname]);
+  }, [pathname, copy.pageTitle]);
 
   return (
     <RequireAuth>

@@ -49,7 +49,7 @@ export default function AppTopbar({
           {isSidebarExpanded ? <KeyboardDoubleArrowLeftIcon /> : <MenuIcon />}
         </IconButton>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          {title || "Orion Admin"}
+          {title || "Nebula Admin"}
         </Typography>
         {/* Theme toggle removed per request */}
         <IconButton

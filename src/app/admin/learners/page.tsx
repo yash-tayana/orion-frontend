@@ -40,6 +40,7 @@ import StatusChip from "@/components/StatusChip";
 import { fetchJson } from "@/api/client";
 import { useAuth } from "@/auth/useAuth";
 import { ApiError } from "@/api/errors";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function LearnersPage(): React.ReactElement {
   const { data: me } = useMe();
@@ -392,16 +393,19 @@ export default function LearnersPage(): React.ReactElement {
     [me?.role, router]
   );
 
+  const copy = getCrmCopy();
+  const pageTitle = copy.pageTitle;
+
   return (
     <>
       {list.isLoading && <LinearProgress />}
       <PageHeader
-        title="Learners"
-        description="Manage suspects, leads and candidate-free cohorts."
+        title={pageTitle}
+        description={`Manage and track all ${copy.plural}.`}
         actions={
           canCreateLearner(me?.role) ? (
             <Button variant="contained" onClick={() => setOpenCreate(true)}>
-              New Learner
+              {`New ${copy.singularTitle}`}
             </Button>
           ) : null
         }
@@ -413,7 +417,7 @@ export default function LearnersPage(): React.ReactElement {
             setQ(value);
             updateURL({ q: value });
           }}
-          placeholder="Search learners"
+          placeholder={`Search ${copy.plural}`}
         />
         <SegmentedControl
           value={status}
@@ -680,15 +684,15 @@ export default function LearnersPage(): React.ReactElement {
 
               return (
                 <EmptyState
-                  title={`No learners found${filterText}`}
+                  title={`No ${copy.plural} found${filterText}`}
                   description={
                     activeFilters.length > 0
                       ? "Try adjusting your filters to see more results."
-                      : "Get started by adding your first learner to the system."
+                      : `Get started by adding your first ${copy.singular} to the system.`
                   }
                   actionLabel={
                     isAdmin(me?.role) && activeFilters.length === 0
-                      ? "Add your first learner"
+                      ? `Add your first ${copy.singularTitle}`
                       : undefined
                   }
                   onAction={
@@ -711,7 +715,7 @@ export default function LearnersPage(): React.ReactElement {
           // If not, show a toast message
           if (status && status !== "SUSPECT") {
             enqueueSnackbar(
-              "Created learner (not visible under current filters)",
+              `Created ${copy.singular} (not visible under current filters)`,
               {
                 variant: "info",
               }

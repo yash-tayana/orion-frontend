@@ -35,12 +35,14 @@ import PersonIcon from "@mui/icons-material/Person";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import { motion } from "framer-motion";
 import type { ReactElement } from "react";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function SettingsPage(): ReactElement {
   const { settings, update } = useSettings();
   const { updateSources } = useUpdateSources();
   const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
+  const copy = getCrmCopy();
   const [sources, setSources] = useState<string[]>([]);
   const [newSource, setNewSource] = useState("");
   const [openSources, setOpenSources] = useState(false);
@@ -119,7 +121,7 @@ export default function SettingsPage(): ReactElement {
               <Typography variant="h6">Sources</Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary" mt={0.5}>
-              Manage source tags used in Learners
+              {`Manage source tags used in ${copy.pluralTitle}`}
             </Typography>
           </Paper>
         </motion.div>

@@ -27,6 +27,7 @@ import { useSettings } from "@/api/hooks/useSettings";
 import type { ReactElement } from "react";
 import { useMe } from "@/api/hooks/useMe";
 import { canEditLearner } from "@/utils/rbac";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 interface EditLearnerDialogProps {
   open: boolean;
@@ -69,6 +70,7 @@ export default function EditLearnerDialog({
   const { settings } = useSettings();
   const { accessToken } = useAuth();
   const firstNameRef = useRef<HTMLInputElement>(null);
+  const copy = getCrmCopy();
 
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -259,7 +261,9 @@ export default function EditLearnerDialog({
         });
       }
 
-      enqueueSnackbar("Learner updated successfully", { variant: "success" });
+      enqueueSnackbar(`${copy.singularTitle} updated successfully`, {
+        variant: "success",
+      });
       onClose();
       onSuccess?.();
     } catch (error: unknown) {
@@ -279,7 +283,7 @@ export default function EditLearnerDialog({
             phone: "Please enter a valid phone number",
           }));
         }
-        enqueueSnackbar(errorObj.message || "Failed to update learner", {
+        enqueueSnackbar(errorObj.message || `Failed to update ${copy.singular}`, {
           variant: "error",
           action: (
             <Button color="inherit" size="small" onClick={handleSubmit}>
@@ -307,7 +311,7 @@ export default function EditLearnerDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Edit Learner</DialogTitle>
+      <DialogTitle>{`Edit ${copy.singularTitle}`}</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} pt={1}>
           <TextField
@@ -452,7 +456,7 @@ export default function EditLearnerDialog({
           disabled={!enabled || isSubmitting}
           startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
         >
-          {isSubmitting ? "Updating..." : "Update Learner"}
+          {isSubmitting ? "Updating..." : `Update ${copy.singularTitle}`}
         </Button>
       </DialogActions>
     </Dialog>

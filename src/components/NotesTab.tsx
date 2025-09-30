@@ -27,6 +27,7 @@ import EmptyState from "@/components/EmptyState";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type { ReactElement } from "react";
 import { ApiError } from "@/api/errors";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 interface NotesTabProps {
   learnerId: string;
@@ -44,6 +45,7 @@ export default function NotesTab({
   const [files, setFiles] = useState<File[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<LearnerNote | null>(null);
+  const copy = getCrmCopy();
 
   const handleSubmit = async () => {
     if (!newNote.trim()) return;
@@ -58,7 +60,7 @@ export default function NotesTab({
       enqueueSnackbar("Note added", { variant: "success" });
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 403) {
-        enqueueSnackbar("You can only add notes to learners you own.", {
+        enqueueSnackbar(`You can only add notes to ${copy.plural} you own.`, {
           variant: "info",
         });
       } else {
@@ -306,7 +308,7 @@ export default function NotesTab({
           </Button>
           {!canWrite && (
             <Typography variant="caption" color="text.secondary">
-              Read-only for your role. You can add notes for learners you own.
+              {`Read-only for your role. You can add notes for ${copy.plural} you own.`}
             </Typography>
           )}
         </Stack>
@@ -317,7 +319,7 @@ export default function NotesTab({
         {!notes.data || notes.data.length === 0 ? (
           <EmptyState
             title="No notes yet"
-            description="Add your first note to start tracking this learner's progress."
+            description={`Add your first note to start tracking this ${copy.singular}'s progress.`}
             actionLabel="Add your first note"
             onAction={() => document.getElementById("file-input")?.focus()}
           />

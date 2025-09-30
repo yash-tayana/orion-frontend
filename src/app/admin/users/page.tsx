@@ -35,11 +35,13 @@ import {
 import { useMe } from "@/api/hooks/useMe";
 import { isSuper } from "@/utils/rbac";
 import { useSnackbar } from "notistack";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function UsersPage(): ReactElement {
   const router = useRouter();
   const { data: me } = useMe();
   const { enqueueSnackbar } = useSnackbar();
+  const copy = getCrmCopy();
 
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -64,14 +66,12 @@ export default function UsersPage(): ReactElement {
           {
             key: "SALES",
             label: "SALES",
-            description:
-              "See own + unassigned; can claim unassigned; edit only own learners.",
+            description: `See own + unassigned; can claim unassigned; edit only own ${copy.plural}.`,
           },
           {
             key: "COUNSELOR",
             label: "COUNSELOR",
-            description:
-              "Read-only across learners; counselors settings view-only.",
+            description: `Read-only across ${copy.plural}; counselors settings view-only.`,
           },
           { key: "USER", label: "USER", description: "Limited access user." },
           {

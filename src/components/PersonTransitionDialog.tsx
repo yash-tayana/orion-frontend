@@ -20,6 +20,7 @@ import {
 import { useSnackbar } from "notistack";
 import { useTransitions } from "@/api/hooks/useTransitions";
 import type { Person } from "@/api/hooks/usePeople";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 interface PersonTransitionDialogProps {
   open: boolean;
@@ -56,6 +57,7 @@ export default function PersonTransitionDialog({
 }: PersonTransitionDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
   const { transition } = useTransitions(person.id);
+  const copy = getCrmCopy();
   const [formData, setFormData] = useState({
     toStatus: "",
     reason: "",
@@ -179,7 +181,7 @@ export default function PersonTransitionDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Update Learner Status</DialogTitle>
+      <DialogTitle>{`Update ${copy.singularTitle} Status`}</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={3} pt={1}>
           <Box>
@@ -187,7 +189,8 @@ export default function PersonTransitionDialog({
               <strong>Current Status:</strong> {STATUS_LABELS[person.status]}
             </p>
             <p>
-              <strong>Learner:</strong> {person.firstName} {person.lastName}
+              <strong>{copy.singularTitle}:</strong> {person.firstName}{" "}
+              {person.lastName}
             </p>
           </Box>
 
@@ -242,7 +245,7 @@ export default function PersonTransitionDialog({
                 error={!!errors.deferredUntil}
                 helperText={
                   errors.deferredUntil ||
-                  "When should this learner be reconsidered?"
+                  `When should this ${copy.singular} be reconsidered?`
                 }
                 fullWidth
                 required
@@ -254,7 +257,8 @@ export default function PersonTransitionDialog({
                 onChange={(e) => handleChange("deferredReason", e.target.value)}
                 error={!!errors.deferredReason}
                 helperText={
-                  errors.deferredReason || "Why is this learner being deferred?"
+                  errors.deferredReason ||
+                    `Why is this ${copy.singular} being deferred?`
                 }
                 fullWidth
                 multiline
@@ -275,7 +279,7 @@ export default function PersonTransitionDialog({
               error={!!errors.discontinueReason}
               helperText={
                 errors.discontinueReason ||
-                "Why is this learner being discontinued?"
+                `Why is this ${copy.singular} being discontinued?`
               }
               fullWidth
               multiline

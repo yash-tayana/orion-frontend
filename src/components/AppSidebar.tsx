@@ -19,6 +19,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import Image from "next/image";
 import { isAdmin, isSuper } from "@/utils/rbac";
 import { useMe } from "@/api/hooks/useMe";
+import { getCrmCopy } from "@/utils/crmCopy";
 
 export default function AppSidebar({
   expanded = false,
@@ -29,6 +30,7 @@ export default function AppSidebar({
 }): ReactElement {
   const pathname = usePathname();
   const { data: me } = useMe();
+  const copy = getCrmCopy();
 
   const items = [
     {
@@ -36,7 +38,11 @@ export default function AppSidebar({
       label: "Dashboard",
       icon: <AnalyticsIcon />,
     },
-    { href: "/admin/learners", label: "Learners", icon: <LocalLibraryIcon /> },
+    {
+      href: "/admin/learners",
+      label: copy.pageTitle,
+      icon: <LocalLibraryIcon />,
+    },
     { href: "/admin/calendar", label: "Calendar", icon: <DateRangeIcon /> },
     { href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> },
     ...(isSuper(me?.role)
