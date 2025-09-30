@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   eslint: { ignoreDuringBuilds: true },
   env: {
-    CRM_ENVIRONMENT: process.env.CRM_ENVIRONMENT || "academy",
+    NEXT_PUBLIC_CRM_ENVIRONMENT:
+      process.env.NEXT_PUBLIC_CRM_ENVIRONMENT || "academy",
   },
 };
 

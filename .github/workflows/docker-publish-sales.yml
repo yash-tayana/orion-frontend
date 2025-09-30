@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish Docker image for Sales
 
 on:
   push:
@@ -57,7 +57,7 @@ jobs:
             NEXT_PUBLIC_AZURE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AZURE_CLIENT_ID }}
             NEXT_PUBLIC_AZURE_TENANT_ID=${{ secrets.NEXT_PUBLIC_AZURE_TENANT_ID }}
             NEXT_PUBLIC_AZURE_API_AUDIENCE=${{ secrets.NEXT_PUBLIC_AZURE_API_AUDIENCE }}
-            CRM_ENVIRONMENT=sales
+            NEXT_PUBLIC_CRM_ENVIRONMENT=sales
           file: ./Dockerfile_Sales
           context: .
           platforms: ${{ startsWith(github.ref, 'refs/tags/') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}

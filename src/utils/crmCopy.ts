@@ -40,7 +40,7 @@ const CRM_COPY: Record<CRMEnvironment, CrmCopy> = {
 };
 
 export function getCrmCopy(): CrmCopy {
-  return CRM_COPY[env.CRM_ENVIRONMENT] ?? CRM_COPY.academy;
+  return CRM_COPY[env.NEXT_PUBLIC_CRM_ENVIRONMENT] ?? CRM_COPY.academy;
 }
 
 export type { CrmCopy };

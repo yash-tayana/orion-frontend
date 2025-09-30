@@ -8,13 +8,13 @@ const EnvSchema = z.object({
     .string()
     .min(1, "Missing Azure API Audience (api://...)"),
   NEXT_PUBLIC_AUTH_BYPASS: z.string().optional(),
-  CRM_ENVIRONMENT: z
+  NEXT_PUBLIC_CRM_ENVIRONMENT: z
     .enum(["academy", "sales", "hr", "rosa"])
     .default("academy"),
 });
 
 export type PublicEnv = z.infer<typeof EnvSchema>;
-export type CRMEnvironment = PublicEnv["CRM_ENVIRONMENT"];
+export type CRMEnvironment = PublicEnv["NEXT_PUBLIC_CRM_ENVIRONMENT"];
 
 export const env: PublicEnv = (() => {
   const parsed = EnvSchema.safeParse({
@@ -30,7 +30,7 @@ export const env: PublicEnv = (() => {
     NEXT_PUBLIC_AZURE_API_AUDIENCE:
       process.env.NEXT_PUBLIC_AZURE_API_AUDIENCE ||
       "api://62cbe778-2e7e-49f3-a659-c6b59bfc6a7f",
-    CRM_ENVIRONMENT: process.env.CRM_ENVIRONMENT || "academy",
+    NEXT_PUBLIC_CRM_ENVIRONMENT: process.env.NEXT_PUBLIC_CRM_ENVIRONMENT || "academy",
   });
   if (!parsed.success) {
     console.error(

@@ -11,6 +11,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy rest of the project and build
 COPY . .
+ENV NEXT_PUBLIC_CRM_ENVIRONMENT=hr
 RUN npm run build
 
 # Production image
@@ -28,6 +29,5 @@ EXPOSE 3000
 
 # Run Next.js in production mode
 ENV NODE_ENV=production
-ENV CRM_ENVIRONMENT=hr
 ENV NEXT_TELEMETRY_DISABLED=1
 CMD ["npm", "run", "start"]
