@@ -30,7 +30,8 @@ export const env: PublicEnv = (() => {
     NEXT_PUBLIC_AZURE_API_AUDIENCE:
       process.env.NEXT_PUBLIC_AZURE_API_AUDIENCE ||
       "api://62cbe778-2e7e-49f3-a659-c6b59bfc6a7f",
-    NEXT_PUBLIC_CRM_ENVIRONMENT: process.env.NEXT_PUBLIC_CRM_ENVIRONMENT || "academy",
+    NEXT_PUBLIC_CRM_ENVIRONMENT:
+      process.env.NEXT_PUBLIC_CRM_ENVIRONMENT || "academy",
   });
   if (!parsed.success) {
     console.error(
