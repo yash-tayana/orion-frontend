@@ -9,9 +9,7 @@ const EnvSchema = z.object({
     .min(1, "Missing Azure API Audience (api://...)"),
   NEXT_PUBLIC_AUTH_BYPASS: z.string().optional(),
   CRM_ENVIRONMENT: z
-    .enum(["academy", "sales", "hr", "rosa"], {
-      required_error: "CRM environment must be set",
-    })
+    .enum(["academy", "sales", "hr", "rosa"])
     .default("academy"),
 });
 
