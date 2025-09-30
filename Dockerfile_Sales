@@ -12,6 +12,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Copy rest of the project and build
 COPY . .
 ENV NEXT_PUBLIC_CRM_ENVIRONMENT=sales
+ENV NEXT_PUBLIC_API_BASE_URL=https://nebula-api.tayanasolutions.com
 RUN npm run build
 
 # Production image
